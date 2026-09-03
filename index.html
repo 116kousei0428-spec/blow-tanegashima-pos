@@ -831,8 +831,8 @@ function normalizeCloudUrl(v){return String(v||'').trim().replace(/\/+$/,'')}
 function normalizeCloudPath(v){return String(v||'').trim().replace(/^\/+|\/+$/g,'').replace(/\.json$/,'')}
 function getCloudConfig(){
   let saved={};try{saved=JSON.parse(localStorage.getItem(CLOUD_KEY)||'{}')||{}}catch(e){}
-  // 配布URLを初めて開いた端末でも、同期設定操作なしで必ずクラウド同期を開始する。
-  // cloudWriteEnabled は初回GET成功まで false のため、空のローカル状態を先に送信することはない。
+  // 配布URLを初めて開いた端末でも自動同期を開始する。
+  // クラウド初回確認が終わるまでは cloudWriteEnabled=false のため先送り送信はしない。
   const cfg={dbUrl:normalizeCloudUrl(saved.dbUrl)||FIXED_CLOUD_DB_URL,path:normalizeCloudPath(saved.path||FIXED_CLOUD_PATH),auth:String(saved.auth||''),device:String(saved.device||('種子島-'+(navigator.platform||'端末'))),autoSync:true,lastSyncAt:saved.lastSyncAt||0,lastAction:saved.lastAction||''};
   if(saved.dbUrl!==cfg.dbUrl||saved.path!==cfg.path||saved.autoSync!==true)localStorage.setItem(CLOUD_KEY,JSON.stringify({...saved,...cfg}));
   return cfg;
@@ -868,6 +868,16 @@ function cloudStatePayload(cfg=getCloudConfig()){
   const json=JSON.stringify(stateForLocalStorage());
   return {store:'tanegashima',version:'amami-aligned-sync-v1',updatedAt:new Date().toISOString(),device:cfg.device||'-',stateSignature:simpleHash(json),state:JSON.parse(json)};
 }
+function hasMeaningfulPosData(src){
+  if(!src||typeof src!=='object')return false;
+  const arrayKeys=['casts','sales','expenses','cashFlows','closings','businessSheets','unpaids','manualClosingSheets','manualClosingDaySheets','visitorEntries'];
+  if(arrayKeys.some(k=>Array.isArray(src[k])&&src[k].length>0))return true;
+  if(Array.isArray(src.tables)&&src.tables.some(t=>t&&(
+    t.open===true||t.startedAt||t.startTime||t.guests>0||
+    (Array.isArray(t.orders)&&t.orders.length>0)||(Array.isArray(t.extensions)&&t.extensions.length>0)
+  )))return true;
+  return false;
+}
 function scheduleAutoCloudSave(json=''){
   if(isViewer||applyingRemoteState||!cloudWriteEnabled||!isAutoSyncEnabled())return;
   const cfg=getCloudConfig();if(!cloudConfigReady(cfg))return;
@@ -891,8 +901,19 @@ async function pollCloudChanges(){
   try{
     const r=await fetch(buildCloudEndpoint(cfg),{method:'GET'});const text=await r.text();if(!r.ok)throw new Error('HTTP '+r.status+' '+text);const data=text?JSON.parse(text):null;
     if(!data||!data.state){cloudHydrated=true;cloudWriteEnabled=false;setCloudStatus('Firebase側に種子島の母体データがありません。\n自動送信は停止中です。最初の1台だけ「今すぐ保存」で母体を作成してください。',true);return;}
-    const remoteSig=data.stateSignature||simpleHash(JSON.stringify(data.state)),remoteRev=Number(data.syncRevision||Date.parse(data.updatedAt)||0),localSig=simpleHash(JSON.stringify(stateForLocalStorage()));
-    cloudHydrated=true;cloudWriteEnabled=true;
+    const localState=stateForLocalStorage();
+    const remoteSig=data.stateSignature||simpleHash(JSON.stringify(data.state)),remoteRev=Number(data.syncRevision||Date.parse(data.updatedAt)||0),localSig=simpleHash(JSON.stringify(localState));
+    const remoteHasData=hasMeaningfulPosData(data.state),localHasData=hasMeaningfulPosData(localState);
+    cloudHydrated=true;
+    // Firebaseに state オブジェクトだけ存在して中身が初期状態だった場合、
+    // データ入り端末を空で上書きしない。誤送信防止のため自動送信も停止したままにする。
+    if(!remoteHasData&&localHasData){
+      cloudWriteEnabled=false;
+      lastRemoteSignature=remoteSig;lastRemoteRevision=Math.max(lastRemoteRevision,remoteRev);
+      setCloudStatus('Firebase側が空/初期状態のため、端末データを保護しました。\n自動送信も停止中です。クラウド母体を確認してください。',true);
+      return;
+    }
+    cloudWriteEnabled=true;
     if(remoteSig===localSig){lastLocalStateSig=localSig;lastRemoteSignature=remoteSig;lastRemoteRevision=Math.max(lastRemoteRevision,remoteRev);return;}
     if(remoteRev<=lastRemoteRevision&&lastRemoteRevision>0)return;
     applyingRemoteState=true;state=normalizeSyncedState(data.state);await persistSyncedState();lastLocalStateSig=simpleHash(JSON.stringify(stateForLocalStorage()));lastRemoteSignature=remoteSig;lastRemoteRevision=remoteRev;localStorage.setItem(CLOUD_KEY,JSON.stringify({...cfg,lastSyncAt:Date.now(),lastAction:'auto-load'}));applyingRemoteState=false;render();setCloudStatus('自動同期中\n他端末の変更を反映: '+new Date().toLocaleString()+'\n送信元: '+(data.device||'-'));
