@@ -389,6 +389,86 @@ body.viewer-mode input:disabled,body.viewer-mode select:disabled,body.viewer-mod
 }
 body.viewer-mode #tableCards>.card{cursor:pointer}
 
+
+
+/* 2026-09-03 smartphone v2: PC styles untouched; mobile-only usability fixes */
+.mobile-quick-actions{display:none}
+.monthly-actions{display:contents}
+@media(max-width:760px){
+  html,body{width:100%!important;max-width:100%!important;overflow-x:hidden!important}
+  .app,.screen,#weekArea,#weeklyPrintArea,#monthlyPrintArea{width:100%!important;max-width:100%!important;min-width:0!important}
+
+  /* Bottom navigation: one thumb-friendly row instead of a cramped two-row grid. */
+  .mobile-bottom-nav{
+    display:flex!important;overflow-x:auto!important;overflow-y:hidden!important;
+    gap:5px!important;padding:6px 7px calc(6px + env(safe-area-inset-bottom))!important;
+    scrollbar-width:none;-webkit-overflow-scrolling:touch
+  }
+  .mobile-bottom-nav::-webkit-scrollbar{display:none}
+  .mobile-bottom-nav button{flex:0 0 68px!important;min-width:68px!important;min-height:48px!important}
+
+  /* Report header controls must never disappear or run off-screen. */
+  #weeklyPrintArea>.weekly-head-row,#monthlyPrintArea>.monthly-head-row{
+    display:block!important;width:100%!important;margin-bottom:6px!important;border:0!important
+  }
+  #weeklyPrintArea>.weekly-head-row h2,#monthlyPrintArea>.monthly-head-row h2{
+    display:block!important;width:100%!important;font-size:15px!important;line-height:1.25!important;margin:0 0 7px!important
+  }
+  #weeklyPrintArea .weekly-actions,#monthlyPrintArea .monthly-actions{
+    display:grid!important;grid-template-columns:1fr 1fr!important;gap:7px!important;width:100%!important;margin:0!important
+  }
+  #weeklyPrintArea .weekly-actions .btn,#monthlyPrintArea .monthly-actions .btn{
+    display:block!important;width:100%!important;min-width:0!important;min-height:42px!important;padding:8px 5px!important;font-size:11px!important
+  }
+
+  /* Weekly: keep every desktop column, but fit the whole table into phone width. */
+  #weeklyPrintArea{overflow:hidden!important;padding:9px!important}
+  #weeklyPrintArea>.muted{font-size:8px!important;line-height:1.2!important;margin-bottom:5px!important}
+  #weeklyPrintArea>.scroll{width:100%!important;max-width:100%!important;overflow:visible!important;border:0!important}
+  #weeklyPrintArea table{
+    width:100%!important;max-width:100%!important;min-width:0!important;table-layout:fixed!important;border-collapse:collapse!important
+  }
+  #weeklyPrintArea table th,#weeklyPrintArea table td{
+    font-size:5.25px!important;line-height:1.03!important;padding:1.7px .6px!important;
+    letter-spacing:-.18px!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:break-all!important;
+    min-width:0!important;max-width:none!important
+  }
+  #weeklyPrintArea table th:first-child,#weeklyPrintArea table td:first-child{width:9.5%!important}
+  #weeklyPrintArea .section{font-size:10px!important;margin:7px 0 4px!important;padding:3px 5px!important}
+  #weeklyPrintArea .summary{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:5px!important}
+  #weeklyPrintArea .summary .card{padding:6px!important;border-radius:8px!important;min-height:44px!important}
+  #weeklyPrintArea .summary .label{font-size:8px!important;line-height:1.1!important}
+  #weeklyPrintArea .summary .val{font-size:12px!important;line-height:1.15!important}
+
+  /* Monthly: prevent document/body width expansion. Only the table itself scrolls. */
+  #monthlyPrintArea{overflow:hidden!important;padding:9px!important}
+  #monthlyPrintArea .monthlyTop{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:5px!important;width:100%!important}
+  #monthlyPrintArea .monthlyTop>div{padding:6px 7px!important;min-width:0!important}
+  #monthlyPrintArea .monthlyTop span{font-size:9px!important;margin-bottom:2px!important}
+  #monthlyPrintArea .monthlyTop b{font-size:13px!important}
+  #monthlyPrintArea>.scroll{display:block!important;width:100%!important;max-width:100%!important;overflow-x:auto!important;overflow-y:visible!important;-webkit-overflow-scrolling:touch!important}
+  #monthlyPrintArea .monthPortraitTable{width:720px!important;min-width:720px!important;max-width:none!important;table-layout:fixed!important}
+  #monthlyPrintArea .monthPortraitTable th,#monthlyPrintArea .monthPortraitTable td{font-size:9px!important;padding:4px 4px!important;white-space:normal!important}
+
+  /* Full-screen operational modals on phones. */
+  .modal{padding:0!important;align-items:stretch!important}
+  .modal .box{
+    width:100vw!important;max-width:none!important;height:100dvh!important;max-height:100dvh!important;
+    margin:0!important;border-radius:0!important;padding:calc(12px + env(safe-area-inset-top)) 12px calc(18px + env(safe-area-inset-bottom))!important;
+    overflow-y:auto!important;overscroll-behavior:contain
+  }
+  .modal .box>.row:first-child{position:sticky!important;top:calc(-12px - env(safe-area-inset-top));z-index:20;background:#fff!important;padding:10px 0 8px!important;border-bottom:1px solid #e5e7eb!important}
+
+  /* Active table quick actions: same existing functions, mobile-only duplicates. */
+  .mobile-quick-actions{
+    position:fixed;left:8px;right:8px;bottom:calc(62px + env(safe-area-inset-bottom));z-index:9990;
+    display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:7px;background:rgba(255,255,255,.97);
+    border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 8px 24px #0002;backdrop-filter:blur(10px)
+  }
+  .mobile-quick-actions .btn{min-height:44px!important;padding:7px 3px!important;font-size:10px!important;border-radius:10px!important}
+  body.viewer-mode .mobile-quick-actions{display:none!important}
+  body.mobile-table-quick{padding-bottom:176px!important}
+}
 </style>
 </head>
 <body>
@@ -2943,7 +3023,13 @@ function payrollSummaryCards(c,totals,label='週間',base=state.businessDate) {
   let bonusSummaryCard = hasBonus ? cardStat(`${label}ボーナス`, bonus.totalBonus) : '';
   return `${fixed}${itemTotals}${bonusBlock}<div class="section">${label}給与まとめ</div><div class="summary" style="margin-top:10px">${cardStat('時間給合計',shownTotals.labor)}${cardStat('バック総額',shownTotals.back)}${bonusSummaryCard}${cardStat('総額',gross)}${cardStatText('控除率',(lock?lock.deductionRate:(c.deductionRate||0))+'%')}${cardStat('控除額',deduction)}${cardStat('支給額',net)}</div>${action}`
 }
-function makeWeek(){let c=state.casts.find(x=>x.id===weekCast.value);if(!c){weekArea.innerHTML='<div class="card"><p class="muted">キャストを選択してください。</p></div>';return;}let base=weekDate.value||state.businessDate, totals=initWeekTotals(), wds=weekDates(base);let rows=wds.map(d=>payrollDayRow(c,d,totals)).join('');weekArea.innerHTML=`<div class="card printable-sheet" id="weeklyPrintArea"><div class="row"><h2>${c.name} 週間表 ${wds[0]}〜${wds[6]}</h2><div class="row no-print"><button class="btn out" onclick="printElement('weeklyPrintArea')">週間表印刷（A4横）</button><button class="btn blue" onclick="saveWeeklyA4(this)">保存（A4横）</button></div></div><div class="muted">日曜開始・土曜締め。月跨ぎあり。週間ボーナスは週最終日の月へ計上。</div><div class="scroll"><table>${payrollTableHead()}<tbody>${rows}${totalsRow(totals)}</tbody></table></div>${payrollSummaryCards(c,totals,'週間',base)}</div>`}
+function makeWeek(){
+  let c=state.casts.find(x=>x.id===weekCast.value);
+  if(!c){weekArea.innerHTML='<div class="card"><p class="muted">キャストを選択してください。</p></div>';return;}
+  let base=weekDate.value||state.businessDate, totals=initWeekTotals(), wds=weekDates(base);
+  let rows=wds.map(d=>payrollDayRow(c,d,totals)).join('');
+  weekArea.innerHTML=`<div class="card printable-sheet" id="weeklyPrintArea"><div class="row weekly-head-row"><h2>${c.name} 週間表 ${wds[0]}〜${wds[6]}</h2><div class="row no-print weekly-actions"><button class="btn out" onclick="printElement('weeklyPrintArea')">週間表印刷（A4横）</button><button class="btn blue" onclick="saveWeeklyA4(this)">保存（A4横）</button></div></div><div class="muted">日曜開始・土曜締め。月跨ぎあり。週間ボーナスは週最終日の月へ計上。</div><div class="scroll"><table>${payrollTableHead()}<tbody>${rows}${totalsRow(totals)}</tbody></table></div>${payrollSummaryCards(c,totals,'週間',base)}</div>`;
+}
 function monthPortraitSummary(c,totals,base){
   let bonus=weeklyBonusSummary(totals), gross=totals.pay+bonus.totalBonus, deduction=gross*((c.deductionRate||0)/100), net=gross-deduction;
   return `<div class="monthlyTop">
@@ -2977,7 +3063,7 @@ function makeMonthSheet(){
   let c=state.casts.find(x=>x.id===weekCast.value);if(!c)return;
   let base=weekDate.value||state.businessDate, totals=initWeekTotals();
   let rows=monthDays(base).map(d=>monthPortraitRow(c,d,totals)).join('');
-  weekArea.innerHTML=`<div class="card printable-sheet monthly-portrait" id="monthlyPrintArea"><div class="row"><h2>${c.name} 月間表 ${monthKeyOf(base)}</h2><button class="btn blue no-print" onclick="screenshotElement('monthlyPrintArea')">保存（A4横）</button><button class="btn out no-print" onclick="printElement('monthlyPrintArea')">月間表印刷（A4横）</button></div><div class="muted">A4横1枚用。上に給与まとめ、下に日別明細を表示。</div>${monthPortraitSummary(c,totals,base)}<div class="section">日別明細</div><div class="scroll"><table class="monthPortraitTable">${monthPortraitHead()}<tbody>${rows}${monthPortraitTotalsRow(totals)}</tbody></table></div></div>`
+  weekArea.innerHTML=`<div class="card printable-sheet monthly-portrait" id="monthlyPrintArea"><div class="row monthly-head-row"><h2>${c.name} 月間表 ${monthKeyOf(base)}</h2><div class="row no-print monthly-actions"><button class="btn blue" onclick="screenshotElement('monthlyPrintArea')">保存（A4横）</button><button class="btn out" onclick="printElement('monthlyPrintArea')">月間表印刷（A4横）</button></div></div><div class="muted">A4横1枚用。上に給与まとめ、下に日別明細を表示。</div>${monthPortraitSummary(c,totals,base)}<div class="section">日別明細</div><div class="scroll"><table class="monthPortraitTable">${monthPortraitHead()}<tbody>${rows}${monthPortraitTotalsRow(totals)}</tbody></table></div></div>`
 }
 function showWeekHistoryMonth(ym){let casts=state.casts||[];let weeks=[];let first=ym+'-01', days=monthDays(first);let used=new Set();days.forEach(d=>{let wk=weekDates(d).join('|');if(!used.has(wk)){used.add(wk);weeks.push(d)}});historyDetail.innerHTML=`<div class="card" style="background:#f8fafc"><h3>週間表履歴 ${ym}</h3><p class="muted">月跨ぎありの週間表を履歴データから再表示します。</p>${casts.map(c=>`<div class="section">${c.name}</div>${weeks.map(w=>{let totals=initWeekTotals();let rows=weekDates(w).map(d=>payrollDayRow(c,d,totals)).join('');return `<div class="card" style="margin:10px 0"><h4>${weekDates(w)[0]}〜${weekDates(w)[6]}</h4><div class="scroll"><table>${payrollTableHead()}<tbody>${rows}${totalsRow(totals)}</tbody></table></div>${payrollSummaryCards(c,totals,'週間',w)}</div>`}).join('')}`).join('')}</div>`}
 function addCast(){let n=newCast.value.trim();if(!n)return;let base=normalizeBackSettings(state.defaultBackSettings);let custom=Number(newCastDeductionCustom.value||'');if(Number.isFinite(custom)&&custom>0)base.deductionRate=custom;let selected=Number(newCastDeduction?.value||'');if(!newCastDeductionCustom.value&&Number.isFinite(selected)&&selected>0)base.deductionRate=selected;let useDefault=Math.abs(base.deductionRate-state.defaultBackSettings.deductionRate)<0.0001;let same=(state.casts||[]).find(c=>(c.name||'').trim()===n);if(same){if(same.hidden){if(confirm(`${n} は非表示キャストに存在します。再表示しますか？`)){same.hidden=false;same.status=same.status||'off';same.useDefaultBack=useDefault;same.backSettings=base;same.deductionRate=base.deductionRate;same.hourly=base.hourly;newCast.value='';newCastDeductionCustom.value='';render();return;}}else{alert(`${n} は既に登録されています`);return;}}state.casts.push({id:uuid(),name:n,status:'off',hourly:base.hourly,deductionRate:base.deductionRate,useDefaultBack:useDefault,backSettings:base,logs:{},hidden:false});newCast.value='';newCastDeductionCustom.value='';render()}
@@ -3336,9 +3422,8 @@ function printElement(id){
         const pdoc=popup.document;
         pdoc.open();
         pdoc.write(`<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${printTitle}</title><style>${css}
-          .mobile-print-btn{position:fixed;right:12px;top:12px;z-index:99999;border:0;border-radius:12px;background:#111827;color:#fff;padding:12px 18px;font-weight:900;font-size:16px}
-          @media print{.mobile-print-btn{display:none!important}}
-        </style></head><body><button class="mobile-print-btn" onclick="window.print()">印刷する</button><div class="print-viewport"><div class="print-page">${cloned.outerHTML}</div></div></body></html>`);
+          .mobile-print-toolbar{position:fixed;left:10px;right:10px;top:calc(10px + env(safe-area-inset-top));z-index:99999;display:grid;grid-template-columns:1fr 1fr;gap:8px}.mobile-print-btn{border:0;border-radius:12px;background:#111827;color:#fff;padding:12px 10px;font-weight:900;font-size:15px}.mobile-print-btn.back{background:#e5e7eb;color:#111827}@media print{.mobile-print-toolbar{display:none!important}}
+        </style></head><body><div class="mobile-print-toolbar"><button class="mobile-print-btn back" onclick="try{window.close()}catch(e){};setTimeout(()=>{if(!window.closed){history.back()}},80)">POSへ戻る</button><button class="mobile-print-btn" onclick="window.print()">印刷する</button></div><div class="print-viewport"><div class="print-page">${cloned.outerHTML}</div></div></body></html>`);
         pdoc.close();
         __blow2ndPrintLock=false;
         setTimeout(()=>{try{popup.focus();popup.print();}catch(e){console.warn(e)}},450);
@@ -4489,6 +4574,52 @@ async function saveWeeklyA4(button){
   }
 
   hydrateActualIntegratedData();
+})();
+</script>
+
+<script id="smartphone-v2-behavior">
+(function(){
+  function refreshMobileQuickActions(){
+    try{
+      const panel=document.getElementById('tablePanel');
+      if(!panel)return;
+      panel.querySelectorAll('.mobile-quick-actions').forEach(x=>x.remove());
+      document.body.classList.remove('mobile-table-quick');
+      if(!isMobileLike() || isViewer)return;
+      const tablesScreen=document.getElementById('tables');
+      if(!tablesScreen?.classList.contains('active'))return;
+      const t=(state.tables||[]).find(x=>x.id===active);
+      if(!t || t.status!=='busy')return;
+      const bar=document.createElement('div');
+      bar.className='mobile-quick-actions viewer-hidden no-print';
+      bar.innerHTML=`<button class="btn warn" onclick="openExtensionAdd('${t.id}','half')">ハーフ延長</button><button class="btn blue" onclick="openExtensionAdd('${t.id}','full')">フル延長</button><button class="btn ok" onclick="openCheckout('${t.id}')">会計</button>`;
+      panel.appendChild(bar);
+      document.body.classList.add('mobile-table-quick');
+    }catch(e){console.warn('mobile quick actions:',e)}
+  }
+  const baseRenderTablesMobileV2=window.renderTables;
+  if(typeof baseRenderTablesMobileV2==='function'){
+    window.renderTables=function(){
+      const out=baseRenderTablesMobileV2.apply(this,arguments);
+      setTimeout(refreshMobileQuickActions,0);
+      return out;
+    };
+  }
+  const baseOpenScreenMobileV2=window.openScreen;
+  if(typeof baseOpenScreenMobileV2==='function'){
+    window.openScreen=function(id){
+      const out=baseOpenScreenMobileV2.apply(this,arguments);
+      if(isMobileLike()){
+        setTimeout(()=>{
+          refreshMobileQuickActions();
+          try{window.scrollTo({top:0,behavior:'instant'})}catch(e){window.scrollTo(0,0)}
+        },0);
+      }
+      return out;
+    };
+  }
+  window.addEventListener('resize',()=>{if(isMobileLike())refreshMobileQuickActions()});
+  setTimeout(refreshMobileQuickActions,300);
 })();
 </script>
 </body>
