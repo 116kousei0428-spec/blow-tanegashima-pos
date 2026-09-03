@@ -344,9 +344,51 @@ table{border-collapse:collapse;width:100%;background:#fff}th,td{border:1px solid
 /* 権限モード: 閲覧 / 店長 / 管理者 */
 .viewer-badge{display:none;background:#7c3aed;color:#fff;font-weight:900;padding:7px 12px;border-radius:999px;font-size:13px}
 body.viewer-mode .viewer-badge{display:inline-flex}
-body.viewer-mode #casts,body.viewer-mode #backup,body.viewer-mode #settings{display:none!important}
+body.viewer-mode #settings,body.viewer-mode #cloud{display:none!important}
 body.viewer-mode .viewer-hidden{display:none!important}
 body.viewer-mode input:disabled,body.viewer-mode select:disabled,body.viewer-mode textarea:disabled{opacity:.75;background:#f1f5f9;color:#334155}
+
+/* 2026-09-03 mobile readability + read-only viewer export */
+@media(max-width:760px){
+  body{padding-bottom:124px}
+  .app{padding:8px 8px 12px}
+  .top{position:sticky;top:0;z-index:120;background:rgba(248,250,252,.96);padding:4px 0 8px;backdrop-filter:blur(10px)}
+  .top>.row{grid-template-columns:auto 1fr 1fr;align-items:stretch}
+  .viewer-badge{align-items:center;justify-content:center;padding:6px 9px;font-size:11px}
+  .stat{padding:8px 9px}
+  .stat .label{font-size:10px}
+  .stat .val{font-size:16px}
+  .mobile-bottom-nav{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;padding:6px 7px calc(6px + env(safe-area-inset-bottom))}
+  .mobile-bottom-nav button{min-height:44px;padding:6px 2px;font-size:10px;line-height:1.1}
+  .mobile-bottom-nav .ico{font-size:17px;line-height:17px;margin-bottom:2px}
+  #tableCards{display:flex!important;grid-template-columns:none!important;gap:8px;overflow-x:auto;overflow-y:hidden;padding:2px 1px 8px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+  #tableCards>.card{flex:0 0 178px;min-width:178px;scroll-snap-align:start;padding:10px;margin:0;cursor:pointer}
+  #tableCards .table-name{font-size:24px}
+  #tableCards .grid2{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:5px!important;margin:7px 0!important}
+  #tableCards .info{padding:6px 5px;min-width:0}
+  #tableCards .info b{font-size:9px;white-space:nowrap}
+  #tableCards .info span{font-size:11px;white-space:normal;overflow-wrap:anywhere}
+  #tableCards .btn{width:100%;min-height:36px;padding:7px 8px}
+  #tablePanel{margin-top:2px;padding:12px}
+  #tablePanel .grid2,#tablePanel .grid3{gap:7px}
+  #tablePanel .info{padding:8px}
+  #tablePanel table{min-width:560px}
+  #casts .cards{grid-template-columns:1fr!important}
+  #manage>.row:first-child{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
+  #manage>.row:first-child>h2{grid-column:1/-1;margin-bottom:0}
+  #manage>.row:first-child>.btn{width:100%;margin:0}
+  #overviewArea .summary,#manageSummary{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #overviewArea .scroll,#weeklyOverviewArea .scroll,#weekArea .scroll,#closingArea .scroll{border-radius:12px;border:1px solid #e5e7eb}
+  .modal .box{max-height:calc(100vh - 24px)}
+}
+@media(max-width:390px){
+  #tableCards>.card{flex-basis:164px;min-width:164px}
+  .title{font-size:18px}
+  .top>.row{grid-template-columns:1fr 1fr}
+  .viewer-badge{grid-column:1/-1}
+}
+body.viewer-mode #tableCards>.card{cursor:pointer}
+
 </style>
 </head>
 <body>
@@ -734,16 +776,29 @@ function applyAdminVisibility(){
 function applyViewerVisibility(){
   document.body.classList.toggle('viewer-mode',isViewer);
   if(!isViewer)return;
-  ['casts','backup','settings'].forEach(id=>document.querySelectorAll(`[data-screen="${id}"]`).forEach(el=>el.classList.add('viewer-hidden')));
+  // 閲覧は「見る・帳票生成・画像/PDF/JSON保存・印刷」のみ許可。
+  // 設定/同期画面と、POSデータを変更する操作は表示しない。
+  ['settings','cloud'].forEach(id=>document.querySelectorAll(`[data-screen="${id}"]`).forEach(el=>el.classList.add('viewer-hidden')));
   document.querySelectorAll('.screen button').forEach(el=>el.classList.add('viewer-hidden'));
-  const allowed=['makeClosing','openHistoryPanel','makeMonthly','makeWeek','makeMonthSheet'];
-  document.querySelectorAll('#manage button').forEach(el=>{const oc=el.getAttribute('onclick')||'';if(allowed.some(x=>oc.startsWith(x+'(')))el.classList.remove('viewer-hidden');});
+  const safeStarts=[
+    'makeClosing','openHistoryPanel','makeMonthly','makeWeek','makeMonthSheet',
+    'renderOverview','renderWeeklyOverview','renderBackupScreen','openBackupSnapshot',
+    'saveBackupManual','downloadBackup','screenshotElement','printElement','printReceipt','renderVisitorCountPanel',
+    'renderVisitorDailyRows','renderBusinessHistory','showBusinessHistory','showWeekHistoryMonth','lockHistory','openScreen'
+  ];
+  document.querySelectorAll('.screen button').forEach(el=>{
+    const oc=(el.getAttribute('onclick')||'').trim();
+    if(safeStarts.some(x=>oc.startsWith(x+'(')) || oc==='window.print()')el.classList.remove('viewer-hidden');
+  });
   document.getElementById('manageWeeklyBtn')?.classList.remove('viewer-hidden');
   document.querySelectorAll('.screen input,.screen select,.screen textarea').forEach(el=>el.disabled=true);
-  ['weekCast','weekDate','weeklyOverviewDate'].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=false;});
-  document.querySelector('#weeklyOverview .row button')?.classList.remove('viewer-hidden');
-  document.querySelectorAll('.tabs button,.mobile-bottom-nav button').forEach(el=>{if(['tables','manage'].includes(el.dataset.screen))el.classList.remove('viewer-hidden');});
-  const activeScreen=document.querySelector('.screen.active')?.id;if(!['tables','manage','weeklyOverview'].includes(activeScreen))openScreen('tables');
+  ['weekCast','weekDate','weeklyOverviewDate','visitorMonthFilter'].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=false;});
+  const allowedScreens=['tables','overview','casts','manage','weeklyOverview','backup'];
+  document.querySelectorAll('.tabs button,.mobile-bottom-nav button').forEach(el=>{
+    if(allowedScreens.includes(el.dataset.screen))el.classList.remove('viewer-hidden');
+  });
+  const activeScreen=document.querySelector('.screen.active')?.id;
+  if(!allowedScreens.includes(activeScreen))openScreen('tables');
 }
 function applyAppLock(){
   const lock = document.getElementById('appLock');
@@ -1370,7 +1425,7 @@ function confirmStartBusinessDay(){
   render();
   alert(`${d} の営業を開始しました。キャスト欄・管理欄を0に戻しました。`);
 }
-function renderTables(){tableCards.innerHTML=state.tables.map(t=>{let c=calc(t,now);return `<div class="card" ${isViewer?'':`onclick="active='${t.id}';renderTables()"`}><div class="row"><div class="table-name">${t.id}</div><span class="${timeBadge(t,now)}">${t.status==='busy'?'残り'+remain(t,now)+'分':'空席'}</span></div><div class="grid2" style="margin:10px 0"><div class="info"><b>人数</b><span>${t.guests}名</span></div><div class="info"><b>時間</b><span>${t.startedAt?mins(t.startedAt,now)+'分 / 残り'+remain(t,now)+'分':'-'}</span></div><div class="info"><b>支払</b><span>${t.payment==='card'?'カード':'現金'}</span></div><div class="info"><b>金額</b><span>${t.status==='busy'?yen(c.total):'-'}</span></div></div>${t.status==='busy'?`<button class="btn out" onclick="event.stopPropagation();openCheckout('${t.id}')">会計</button>`:`<button class="btn" onclick="event.stopPropagation();openStart('${t.id}')">入卓</button>`}</div>`}).join('');
+function renderTables(){tableCards.innerHTML=state.tables.map(t=>{let c=calc(t,now);return `<div class="card" onclick="active='${t.id}';renderTables()"><div class="row"><div class="table-name">${t.id}</div><span class="${timeBadge(t,now)}">${t.status==='busy'?'残り'+remain(t,now)+'分':'空席'}</span></div><div class="grid2" style="margin:10px 0"><div class="info"><b>人数</b><span>${t.guests}名</span></div><div class="info"><b>時間</b><span>${t.startedAt?mins(t.startedAt,now)+'分 / 残り'+remain(t,now)+'分':'-'}</span></div><div class="info"><b>支払</b><span>${t.payment==='card'?'カード':'現金'}</span></div><div class="info"><b>金額</b><span>${t.status==='busy'?yen(c.total):'-'}</span></div></div>${t.status==='busy'?`<button class="btn out" onclick="event.stopPropagation();openCheckout('${t.id}')">会計</button>`:`<button class="btn" onclick="event.stopPropagation();openStart('${t.id}')">入卓</button>`}</div>`}).join('');
 let t=state.tables.find(x=>x.id===active)||state.tables[0], c=calc(t,now);
 tablePanel.innerHTML=`<div class="row"><h2>${t.id}</h2><span class="${timeBadge(t,now)}">${t.status==='busy'?'残り'+remain(t,now)+'分':'空席'}</span></div>`+(t.status!=='busy'?`<button class="btn" style="width:100%;padding:18px" onclick="openStart('${t.id}')">入卓設定</button>`:`<div class="grid3"><div class="info"><b>セット</b><span>基本60分</span></div><div class="info"><b>残り</b><span>${remain(t,now)}分</span></div><div class="info"><b>延長</b><span>無制限</span></div></div><div class="grid2" style="margin-top:10px"><button class="btn warn" onclick="openExtensionAdd('${t.id}','half')">ハーフ延長30分</button><button class="btn blue" onclick="openExtensionAdd('${t.id}','full')">フル延長60分</button></div><button class="btn out" style="margin-top:10px;width:100%" onclick="openTimeEdit('${t.id}')">時間を修正</button><div class="grid3" style="margin-top:10px"><div><label>人数</label><input type="number" min="1" value="${t.guests}" onchange="updateTable('${t.id}',{guests:+this.value||1})"></div><div><label>一人分セット料金</label><input type="number" min="0" value="${baseSeatUnit(t)}" onchange="updateTableSetPriceInline('${t.id}',this.value)"><div class="muted" style="font-size:11px;margin-top:4px">合計 ${yen(baseSeat(t))}</div></div><div><label>支払</label><select onchange="updateTable('${t.id}',{payment:this.value})"><option value="cash" ${t.payment==='cash'?'selected':''}>現金</option><option value="card" ${t.payment==='card'?'selected':''}>カード</option></select></div></div><div class="grid3" style="margin-top:10px"><button class="btn" onclick="castDrink('${t.id}')">ドリンク</button><button class="btn out" onclick="simple('${t.id}','beer','ビール',1000)">ビール</button><button class="btn out" onclick="shot('${t.id}')">ショット</button><button class="btn out" onclick="wheel('${t.id}')">テキカン</button><button class="btn out" onclick="champ('${t.id}')">シャンパン</button><button class="btn out" onclick="ops('${t.id}')">指名/同伴</button><button class="btn warn" onclick="openPrepay('${t.id}')">一部入金</button><button class="btn out" onclick="openMove('${t.id}')">卓移動</button><button class="btn out" onclick="openMerge('${t.id}')">卓合体</button></div><div class="section">指名・同伴 追加</div><div class="grid4" style="margin-top:10px"><button class="btn blue" onclick="opCategory('${t.id}','nominations','指名')">指名追加</button><button class="btn blue" onclick="opCategory('${t.id}','dohan','同伴')">同伴追加</button><button class="btn blue" onclick="opCategory('${t.id}','jounai','場内')">場内追加</button><button class="btn blue" onclick="opCategory('${t.id}','after','アフター')">アフター追加</button></div><div class="section">明細</div>${details(t,c)}<div class="grid3" style="margin-top:10px"><button class="btn out" onclick="printReceipt('${t.id}')">伝票発行</button><button class="btn bad" onclick="resetTable('${t.id}')">リセット</button><button class="btn ok" onclick="openCheckout('${t.id}')">会計完了</button></div>`)
 }
@@ -2335,6 +2390,18 @@ async function writeBackupToFolder(obj, filename){
 }
 async function saveBackup(reason='manual', silent=false){
   try{
+    if(isViewer){
+      const payload=buildBackupPayload(reason==='manual'?'viewer-export':reason);
+      const filename=backupFileName(reason==='manual'?'viewer-export':reason);
+      let savedToFolder=false;
+      if(window.showDirectoryPicker){
+        try{ savedToFolder=await writeBackupToFolder(payload,filename); }catch(e){ console.warn('閲覧モード: フォルダ保存失敗。ダウンロードへ切替',e); }
+      }
+      if(!savedToFolder)downloadJsonObject(payload,filename);
+      if(!silent)alert(savedToFolder?`閲覧用バックアップを書き出しました：${filename}`:`閲覧用バックアップをダウンロードします：${filename}`);
+      updateBackupStatus();
+      return true;
+    }
     createAutoBackup(reason);
     save();
     const payload=buildBackupPayload(reason);
@@ -2704,6 +2771,7 @@ function renderBusinessHistory(){
   historyPanel.innerHTML=`<div class="card"><div class="row"><h3>過去営業履歴</h3><div><button class="btn bad small" onclick="deleteAllHistory()">全履歴削除</button> <button class="btn out small" onclick="lockHistory()">閉じる/ロック</button></div></div><p class="muted">営業日を選ぶと、その日の売上・会計・出退勤・未収・レジ締めを確認できます。削除した履歴は復元できません。</p><div class="section">週間表履歴</div><div class="row" style="justify-content:flex-start;flex-wrap:wrap">${monthListFromHistory().map(m=>`<button class="btn out small" onclick="showWeekHistoryMonth('${m}')">${m}</button>`).join('')}</div><div class="scroll" style="margin-top:10px"><table><thead><tr><th>営業日</th><th class="right">売上</th><th class="right">人件費</th><th class="right">バック</th><th class="right">支出</th><th class="right">純利益</th><th>詳細</th><th>削除</th></tr></thead><tbody>${dates.map(d=>{let s=daySum(d);return `<tr><td>${d}</td><td class="right">${yen(s.sales)}</td><td class="right">${yen(s.labor)}</td><td class="right">${yen(s.back)}</td><td class="right">${yen(s.expenses)}</td><td class="right">${yen(s.profit)}</td><td><button class="btn small" onclick="showBusinessHistory('${d}')">開く</button></td><td><button class="btn bad small" onclick="deleteBusinessHistory('${d}')">削除</button></td></tr>`}).join('')||'<tr><td colspan="8" class="muted">履歴なし</td></tr>'}</tbody></table></div><div id="historyDetail" style="margin-top:12px"></div></div>`;
 }
 function deleteBusinessHistory(d){
+  if(isViewer)return alert('閲覧モードでは履歴を削除できません');
   if(!historyUnlocked) return openHistoryPanel();
   if(!confirm(`${d} の履歴を削除します。復元できません。よろしいですか？`)) return;
   state.sales=(state.sales||[]).filter(x=>x.businessDate!==d);
@@ -2720,6 +2788,7 @@ function deleteBusinessHistory(d){
   renderBusinessHistory();
 }
 function deleteAllHistory(){
+  if(isViewer)return alert('閲覧モードでは履歴を削除できません');
   if(!historyUnlocked) return openHistoryPanel();
   if(!confirm('すべての履歴を削除します。復元できません。よろしいですか？')) return;
   state.sales=[];
@@ -4109,7 +4178,7 @@ async function saveWeeklyA4(button){
   // Role/navigation alignment with Amami. Manager remains operational; viewer is read-only.
   const baseOpenScreen=window.openScreen;
   window.openScreen=function(id){
-    if(isViewer&&!['tables','overview','manage','weeklyOverview'].includes(id))return false;
+    if(isViewer&&!['tables','overview','casts','manage','weeklyOverview','backup'].includes(id))return false;
     if(id==='overview'&&!(isAdmin||isViewer))return false;
     if(id==='settings'&&!isAdmin)return false;
     return baseOpenScreen(id);
@@ -4123,10 +4192,17 @@ async function saveWeeklyA4(button){
   window.applyViewerVisibility=function(){
     baseApplyViewerVisibility();
     if(!isViewer)return;
-    document.querySelectorAll(`[data-screen="overview"],[data-screen="weeklyOverview"]`).forEach(el=>el.classList.remove('viewer-hidden'));
+    document.querySelectorAll(`[data-screen="overview"],[data-screen="casts"],[data-screen="weeklyOverview"],[data-screen="backup"]`).forEach(el=>el.classList.remove('viewer-hidden'));
     const activeScreen=document.querySelector('.screen.active')?.id;
-    if(!['tables','overview','manage','weeklyOverview'].includes(activeScreen))baseOpenScreen('tables');
+    if(!['tables','overview','casts','manage','weeklyOverview','backup'].includes(activeScreen))baseOpenScreen('tables');
   };
+
+  // Viewer safe-output hooks: generated report buttons stay usable after the report is rendered.
+  ['renderTables','makeClosing','makeMonthly','makeWeek','makeMonthSheet','renderBackupScreen','openBackupSnapshot','renderVisitorCountPanel','openHistoryPanel','unlockHistory','renderBusinessHistory','showBusinessHistory','showWeekHistoryMonth'].forEach(function(fnName){
+    const base=window[fnName];
+    if(typeof base!=='function')return;
+    window[fnName]=function(){const out=base.apply(this,arguments);if(isViewer)setTimeout(()=>applyViewerVisibility(),0);return out;};
+  });
 
   // hooks without touching sync code
   const baseRender=window.render;

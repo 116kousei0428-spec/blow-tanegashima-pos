@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blow2nd-pos-tanegashima-pwa-v1';
+const CACHE_NAME = 'blow2nd-pos-tanegashima-mobile-viewer-v2';
 const STATIC_ASSETS = [
   './index.html',
   './manifest.json',
