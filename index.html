@@ -2530,7 +2530,7 @@ function makeMonthly(){
   let dates=monthDays(ym+'-01');
   let rows=dates.map(d=>{let s=daySum(d);return `<tr><td>${d}</td><td class="right">${yen(s.sales)}</td><td class="right">${yen(s.labor)}</td><td class="right">${yen(s.back)}</td><td class="right">${yen(s.payroll)}</td><td class="right">${yen(s.expenses)}</td><td class="right">${yen(s.profit)}</td></tr>`}).join('');
   let total=dates.reduce((a,d)=>{let s=daySum(d);a.sales+=s.sales;a.labor+=s.labor;a.back+=s.back;a.payroll+=s.payroll;a.expenses+=s.expenses;a.profit+=s.profit;return a},{sales:0,labor:0,back:0,payroll:0,expenses:0,profit:0});
-  closingArea.innerHTML=`<div class="card"><div class="row"><h2>月締め票 ${ym}</h2><button class="btn blue no-print" onclick="screenshotElement('closingArea')">スクショ保存</button><button class="btn out no-print" onclick="printElement('closingArea')">締め票印刷</button></div><div class="scroll"><table><thead><tr><th>日付</th><th class="right">売上</th><th class="right">人件費</th><th class="right">バック</th><th class="right">給与合計</th><th class="right">仕入れ支出</th><th class="right">純利益</th></tr></thead><tbody>${rows}<tr><th>合計</th><th class="right">${yen(total.sales)}</th><th class="right">${yen(total.labor)}</th><th class="right">${yen(total.back)}</th><th class="right">${yen(total.payroll)}</th><th class="right">${yen(total.expenses)}</th><th class="right">${yen(total.profit)}</th></tr></tbody></table></div></div>`;
+  closingArea.innerHTML=`<div class="card"><div class="row"><h2>月締め票 ${ym}</h2><button class="btn blue no-print" onclick="screenshotElement('closingArea')">保存（A4横）</button><button class="btn out no-print" onclick="printElement('closingArea')">締め票印刷（A4横）</button></div><div class="scroll"><table><thead><tr><th>日付</th><th class="right">売上</th><th class="right">人件費</th><th class="right">バック</th><th class="right">給与合計</th><th class="right">仕入れ支出</th><th class="right">純利益</th></tr></thead><tbody>${rows}<tr><th>合計</th><th class="right">${yen(total.sales)}</th><th class="right">${yen(total.labor)}</th><th class="right">${yen(total.back)}</th><th class="right">${yen(total.payroll)}</th><th class="right">${yen(total.expenses)}</th><th class="right">${yen(total.profit)}</th></tr></tbody></table></div></div>`;
 }
 
 function checkout(id,extra={}){
@@ -2812,7 +2812,7 @@ function showBusinessHistory(d){
   let attendance=(state.casts||[]).map(c=>{let l=effectiveWorkLog(c,d);return {cast:c,log:l}}).filter(x=>x.log.in||x.log.out);
   let unpaid=sales.filter(x=>x.table&&x.table.payment==='unpaid');
   let deletedOrders=(state.orderDeleteLogs||[]).filter(x=>x.businessDate===d);
-  historyDetail.innerHTML=`<div class="card" style="background:#f8fafc"><div class="row"><h3>営業日詳細 ${d}</h3><button class="btn out small" onclick="window.print()">印刷/PDF</button></div><div class="summary" style="margin-top:10px">${cardStat('売上',s.sales)}${cardStat('人件費',s.labor)}${cardStat('バック',s.back)}${cardStat('給与合計',s.payroll)}${cardStat('支出',s.expenses)}${cardStat('純利益',s.profit)}<div class="card stat"><div class="label">利益率</div><div class="val">${pct(s.sales?s.profit/s.sales*100:0)}</div></div></div><div class="section">会計履歴</div><div class="scroll"><table><thead><tr><th>時刻</th><th>卓</th><th>人数</th><th>支払</th><th class="right">小計</th><th class="right">合計</th><th>修正</th></tr></thead><tbody>${sales.map(x=>`<tr><td>${time(new Date(x.checkoutAt))}</td><td>${x.table.id}</td><td>${x.table.guests}</td><td>${x.table.payment==='card'?'カード':x.table.payment==='unpaid'?'未収':'現金'}</td><td class="right">${yen(x.subtotal)}</td><td class="right">${yen(x.total)}</td><td><button class="btn blue small" onclick="editPastReceipt('${x.id}')">修正</button></td></tr>`).join('')||'<tr><td colspan="7" class="muted">会計なし</td></tr>'}</tbody></table></div><div class="section">出退勤</div><div class="scroll"><table><thead><tr><th>キャスト</th><th>出勤</th><th>退勤</th><th>勤務時間</th><th class="right">時間給</th><th class="right">バック</th></tr></thead><tbody>${attendance.map(x=>`<tr><td>${x.cast.name}</td><td>${x.log.in||'-'}</td><td>${x.log.out||'-'}</td><td>${workDur(x.cast,d)}</td><td class="right">${yen(timePay(x.cast,d))}</td><td class="right">${yen(stats(x.cast.id,d).back)}</td></tr>`).join('')||'<tr><td colspan="6" class="muted">出退勤なし</td></tr>'}</tbody></table></div><div class="section">未収</div><div class="scroll"><table><thead><tr><th>時刻</th><th>卓</th><th class="right">金額</th></tr></thead><tbody>${unpaid.map(x=>`<tr><td>${time(new Date(x.checkoutAt))}</td><td>${x.table.id}</td><td class="right">${yen(x.total)}</td></tr>`).join('')||'<tr><td colspan="3" class="muted">未収なし</td></tr>'}</tbody></table></div><div class="section">支出・入出金</div><div class="scroll"><table><thead><tr><th>区分</th><th>内容</th><th class="right">金額</th></tr></thead><tbody>${expenses.map(x=>`<tr><td>支出</td><td>${x.name}</td><td class="right">${yen(x.amount)}</td></tr>`).join('')}${cashFlows.map(x=>`<tr><td>${x.type==='in'?'入金':'出金'}</td><td>${x.name}</td><td class="right">${yen(x.amount)}</td></tr>`).join('')||''}</tbody></table></div><div class="section">注文削除ログ</div><div class="scroll"><table><thead><tr><th>時刻</th><th>卓</th><th>商品</th><th class="right">単価</th><th class="right">数量</th></tr></thead><tbody>${deletedOrders.map(x=>`<tr><td>${new Date(x.at).toLocaleString()}</td><td>${x.tableId}</td><td>${x.name}</td><td class="right">${yen(x.price)}</td><td class="right">${x.qty}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">削除ログなし</td></tr>'}</tbody></table></div><div class="section">営業終了保存データ</div><div class="scroll"><table><thead><tr><th>保存時刻</th><th>稼働卓保存</th><th class="right">保存時売上</th><th class="right">保存時純利益</th></tr></thead><tbody>${((state.businessSheets||[]).filter(x=>x.businessDate===d)).map(x=>`<tr><td>${new Date(x.savedAt).toLocaleString()}</td><td>${(x.tables||[]).filter(t=>t.status==='busy').map(t=>t.id).join(', ')||'-'}</td><td class="right">${yen(x.summary?.sales||0)}</td><td class="right">${yen(x.summary?.profit||0)}</td></tr>`).join('')||'<tr><td colspan="4" class="muted">営業終了保存なし</td></tr>'}</tbody></table></div><div class="section">レジ締め履歴</div><div class="scroll"><table><thead><tr><th>保存時刻</th><th class="right">売上</th><th class="right">純利益</th><th class="right">入金</th><th class="right">出金</th></tr></thead><tbody>${closings.map(x=>`<tr><td>${new Date(x.closedAt).toLocaleString()}</td><td class="right">${yen(x.sales)}</td><td class="right">${yen(x.profit)}</td><td class="right">${yen(x.cashIn)}</td><td class="right">${yen(x.cashOut)}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">レジ締め保存なし</td></tr>'}</tbody></table></div></div>`;
+  historyDetail.innerHTML=`<div class="card" style="background:#f8fafc"><div class="row"><h3>営業日詳細 ${d}</h3><div class="row no-print"><button class="btn blue small" onclick="screenshotElement('historyDetail')">保存（A4横）</button><button class="btn out small" onclick="printElement('historyDetail')">印刷/PDF（A4横）</button></div></div><div class="summary" style="margin-top:10px">${cardStat('売上',s.sales)}${cardStat('人件費',s.labor)}${cardStat('バック',s.back)}${cardStat('給与合計',s.payroll)}${cardStat('支出',s.expenses)}${cardStat('純利益',s.profit)}<div class="card stat"><div class="label">利益率</div><div class="val">${pct(s.sales?s.profit/s.sales*100:0)}</div></div></div><div class="section">会計履歴</div><div class="scroll"><table><thead><tr><th>時刻</th><th>卓</th><th>人数</th><th>支払</th><th class="right">小計</th><th class="right">合計</th><th>修正</th></tr></thead><tbody>${sales.map(x=>`<tr><td>${time(new Date(x.checkoutAt))}</td><td>${x.table.id}</td><td>${x.table.guests}</td><td>${x.table.payment==='card'?'カード':x.table.payment==='unpaid'?'未収':'現金'}</td><td class="right">${yen(x.subtotal)}</td><td class="right">${yen(x.total)}</td><td><button class="btn blue small" onclick="editPastReceipt('${x.id}')">修正</button></td></tr>`).join('')||'<tr><td colspan="7" class="muted">会計なし</td></tr>'}</tbody></table></div><div class="section">出退勤</div><div class="scroll"><table><thead><tr><th>キャスト</th><th>出勤</th><th>退勤</th><th>勤務時間</th><th class="right">時間給</th><th class="right">バック</th></tr></thead><tbody>${attendance.map(x=>`<tr><td>${x.cast.name}</td><td>${x.log.in||'-'}</td><td>${x.log.out||'-'}</td><td>${workDur(x.cast,d)}</td><td class="right">${yen(timePay(x.cast,d))}</td><td class="right">${yen(stats(x.cast.id,d).back)}</td></tr>`).join('')||'<tr><td colspan="6" class="muted">出退勤なし</td></tr>'}</tbody></table></div><div class="section">未収</div><div class="scroll"><table><thead><tr><th>時刻</th><th>卓</th><th class="right">金額</th></tr></thead><tbody>${unpaid.map(x=>`<tr><td>${time(new Date(x.checkoutAt))}</td><td>${x.table.id}</td><td class="right">${yen(x.total)}</td></tr>`).join('')||'<tr><td colspan="3" class="muted">未収なし</td></tr>'}</tbody></table></div><div class="section">支出・入出金</div><div class="scroll"><table><thead><tr><th>区分</th><th>内容</th><th class="right">金額</th></tr></thead><tbody>${expenses.map(x=>`<tr><td>支出</td><td>${x.name}</td><td class="right">${yen(x.amount)}</td></tr>`).join('')}${cashFlows.map(x=>`<tr><td>${x.type==='in'?'入金':'出金'}</td><td>${x.name}</td><td class="right">${yen(x.amount)}</td></tr>`).join('')||''}</tbody></table></div><div class="section">注文削除ログ</div><div class="scroll"><table><thead><tr><th>時刻</th><th>卓</th><th>商品</th><th class="right">単価</th><th class="right">数量</th></tr></thead><tbody>${deletedOrders.map(x=>`<tr><td>${new Date(x.at).toLocaleString()}</td><td>${x.tableId}</td><td>${x.name}</td><td class="right">${yen(x.price)}</td><td class="right">${x.qty}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">削除ログなし</td></tr>'}</tbody></table></div><div class="section">営業終了保存データ</div><div class="scroll"><table><thead><tr><th>保存時刻</th><th>稼働卓保存</th><th class="right">保存時売上</th><th class="right">保存時純利益</th></tr></thead><tbody>${((state.businessSheets||[]).filter(x=>x.businessDate===d)).map(x=>`<tr><td>${new Date(x.savedAt).toLocaleString()}</td><td>${(x.tables||[]).filter(t=>t.status==='busy').map(t=>t.id).join(', ')||'-'}</td><td class="right">${yen(x.summary?.sales||0)}</td><td class="right">${yen(x.summary?.profit||0)}</td></tr>`).join('')||'<tr><td colspan="4" class="muted">営業終了保存なし</td></tr>'}</tbody></table></div><div class="section">レジ締め履歴</div><div class="scroll"><table><thead><tr><th>保存時刻</th><th class="right">売上</th><th class="right">純利益</th><th class="right">入金</th><th class="right">出金</th></tr></thead><tbody>${closings.map(x=>`<tr><td>${new Date(x.closedAt).toLocaleString()}</td><td class="right">${yen(x.sales)}</td><td class="right">${yen(x.profit)}</td><td class="right">${yen(x.cashIn)}</td><td class="right">${yen(x.cashOut)}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">レジ締め保存なし</td></tr>'}</tbody></table></div></div>`;
 }
 
 function syncUnpaids(){
@@ -2887,7 +2887,7 @@ function makeClosing(){
   let totals={db:0,sb:0,jounai:0,dohan:0,after:0,nom:0,wheel:0,champ:0};
   let rows=state.casts.filter(c=>castAttendedOnDate(c,d)).map(c=>{let st=stats(c.id,d),tp=timePay(c,d),l=effectiveWorkLog(c,d);totals.db+=st.dbBack;totals.sb+=st.sbBack;totals.jounai+=st.jounaiBack;totals.dohan+=st.dohanBack;totals.after+=st.afterBack;totals.nom+=st.nomSet+st.nomSub;totals.wheel+=st.wheelBack;totals.champ+=st.champBack;return `<tr><td>${c.name}</td><td>${l.in||0}</td><td>${l.out||0}</td><td>${workDur(c,d)}</td><td class="right">${yen(wage(c,d))}</td><td class="right">${yen(tp)}</td><td>${st.dbQty}杯 / ${yen(st.dbBack)}</td><td>${st.sbQty}杯 / ${yen(st.sbBack)}</td><td>${st.jounai}本 / ${yen(st.jounaiBack)}</td><td>${st.dohan}本 / ${yen(st.dohanBack)}</td><td>${st.after}本 / ${yen(st.afterBack)}</td><td class="right">${yen(st.nomSet)}</td><td class="right">${yen(st.nomSub)}</td><td>${st.wheelCount} / ${yen(st.wheelBack)}</td><td>${st.champCount} / ${yen(st.champBack)}</td><td class="right">${yen(st.back)}</td><td class="right">${yen(st.back+tp)}</td></tr>`}).join('');
   const cardRows=cd.rows.map(x=>`<tr><td>${x.table}</td><td class="right">${yen(x.base)}</td><td class="right">${yen(x.fee)}</td><td class="right">${yen(x.charge)}</td></tr>`).join('')||'<tr><td colspan="4" class="muted">カード会計なし</td></tr>';
-  closingArea.innerHTML=`<div class="card"><div class="row"><h2>締め票 ${d}</h2><button class="btn blue no-print" onclick="screenshotElement('closingArea')">スクショ保存</button><button class="btn out no-print" onclick="printElement('closingArea')">締め票印刷</button></div><div class="grid4"><div class="info"><b>総売上</b><span>${yen(s.sales)}</span></div><div class="info"><b>現金売上</b><span>${yen(bd.cash)}</span></div><div class="info"><b>カード売上</b><span>${yen(bd.card)}</span></div><div class="info"><b>未収</b><span>${yen(bd.unpaid)}</span></div></div><div class="section">カード会計（売上別枠）</div><div class="scroll"><table><thead><tr><th>卓</th><th class="right">売上分</th><th class="right">カード加算</th><th class="right">カード請求額</th></tr></thead><tbody>${cardRows}<tr><th>合計</th><th class="right">${yen(cd.base)}</th><th class="right">${yen(cd.fee)}</th><th class="right">${yen(cd.total)}</th></tr></tbody></table></div><div class="section">キャスト別給与</div><div class="scroll"><table><thead><tr><th>キャスト</th><th>出勤</th><th>退勤</th><th>勤務時間</th><th>時給</th><th>時間給</th><th>DB</th><th>SB</th><th>場内</th><th>同伴</th><th>アフター</th><th>指名(セット)</th><th>指名(小計)</th><th>テキカンB</th><th>シャンパンB</th><th>バック合計</th><th>給与</th></tr></thead><tbody>${rows}</tbody></table></div><div class="section">バック項目別合計</div><div class="summary">${cardStat('DB',totals.db)}${cardStat('SB',totals.sb)}${cardStat('場内',totals.jounai)}${cardStat('同伴',totals.dohan)}${cardStat('アフター',totals.after)}${cardStat('指名',totals.nom)}${cardStat('テキカン',totals.wheel)}${cardStat('シャンパン',totals.champ)}${cardStat('バック総額',s.back)}</div><div class="section">最終集計</div><div class="summary">${cardStat('売上',s.sales)}${cardStat('人件費',s.labor)}${cardStat('バック',s.back)}${cardStat('給与合計',s.payroll)}${cardStat('仕入れ支出',s.expenses)}${cardStat('純利益',s.profit)}${cardStat('カード加算',cd.fee)}</div></div>`}
+  closingArea.innerHTML=`<div class="card"><div class="row"><h2>締め票 ${d}</h2><button class="btn blue no-print" onclick="screenshotElement('closingArea')">保存（A4横）</button><button class="btn out no-print" onclick="printElement('closingArea')">締め票印刷（A4横）</button></div><div class="grid4"><div class="info"><b>総売上</b><span>${yen(s.sales)}</span></div><div class="info"><b>現金売上</b><span>${yen(bd.cash)}</span></div><div class="info"><b>カード売上</b><span>${yen(bd.card)}</span></div><div class="info"><b>未収</b><span>${yen(bd.unpaid)}</span></div></div><div class="section">カード会計（売上別枠）</div><div class="scroll"><table><thead><tr><th>卓</th><th class="right">売上分</th><th class="right">カード加算</th><th class="right">カード請求額</th></tr></thead><tbody>${cardRows}<tr><th>合計</th><th class="right">${yen(cd.base)}</th><th class="right">${yen(cd.fee)}</th><th class="right">${yen(cd.total)}</th></tr></tbody></table></div><div class="section">キャスト別給与</div><div class="scroll"><table><thead><tr><th>キャスト</th><th>出勤</th><th>退勤</th><th>勤務時間</th><th>時給</th><th>時間給</th><th>DB</th><th>SB</th><th>場内</th><th>同伴</th><th>アフター</th><th>指名(セット)</th><th>指名(小計)</th><th>テキカンB</th><th>シャンパンB</th><th>バック合計</th><th>給与</th></tr></thead><tbody>${rows}</tbody></table></div><div class="section">バック項目別合計</div><div class="summary">${cardStat('DB',totals.db)}${cardStat('SB',totals.sb)}${cardStat('場内',totals.jounai)}${cardStat('同伴',totals.dohan)}${cardStat('アフター',totals.after)}${cardStat('指名',totals.nom)}${cardStat('テキカン',totals.wheel)}${cardStat('シャンパン',totals.champ)}${cardStat('バック総額',s.back)}</div><div class="section">最終集計</div><div class="summary">${cardStat('売上',s.sales)}${cardStat('人件費',s.labor)}${cardStat('バック',s.back)}${cardStat('給与合計',s.payroll)}${cardStat('仕入れ支出',s.expenses)}${cardStat('純利益',s.profit)}${cardStat('カード加算',cd.fee)}</div></div>`}
 
 function weeklySubtotalBonusFromNomSub(nomSubTotal){
   const subtotal = Math.round((Number(nomSubTotal)||0) * 10);
@@ -2943,7 +2943,7 @@ function payrollSummaryCards(c,totals,label='週間',base=state.businessDate) {
   let bonusSummaryCard = hasBonus ? cardStat(`${label}ボーナス`, bonus.totalBonus) : '';
   return `${fixed}${itemTotals}${bonusBlock}<div class="section">${label}給与まとめ</div><div class="summary" style="margin-top:10px">${cardStat('時間給合計',shownTotals.labor)}${cardStat('バック総額',shownTotals.back)}${bonusSummaryCard}${cardStat('総額',gross)}${cardStatText('控除率',(lock?lock.deductionRate:(c.deductionRate||0))+'%')}${cardStat('控除額',deduction)}${cardStat('支給額',net)}</div>${action}`
 }
-function makeWeek(){let c=state.casts.find(x=>x.id===weekCast.value);if(!c){weekArea.innerHTML='<div class="card"><p class="muted">キャストを選択してください。</p></div>';return;}let base=weekDate.value||state.businessDate, totals=initWeekTotals(), wds=weekDates(base);let rows=wds.map(d=>payrollDayRow(c,d,totals)).join('');weekArea.innerHTML=`<div class="card printable-sheet" id="weeklyPrintArea"><div class="row"><h2>${c.name} 週間表 ${wds[0]}〜${wds[6]}</h2><div class="row no-print"><button class="btn out" onclick="printElement('weeklyPrintArea')">週間表印刷</button><button class="btn blue" onclick="saveWeeklyA4(this)">スクショ保存（横A4）</button></div></div><div class="muted">日曜開始・土曜締め。月跨ぎあり。週間ボーナスは週最終日の月へ計上。</div><div class="scroll"><table>${payrollTableHead()}<tbody>${rows}${totalsRow(totals)}</tbody></table></div>${payrollSummaryCards(c,totals,'週間',base)}</div>`}
+function makeWeek(){let c=state.casts.find(x=>x.id===weekCast.value);if(!c){weekArea.innerHTML='<div class="card"><p class="muted">キャストを選択してください。</p></div>';return;}let base=weekDate.value||state.businessDate, totals=initWeekTotals(), wds=weekDates(base);let rows=wds.map(d=>payrollDayRow(c,d,totals)).join('');weekArea.innerHTML=`<div class="card printable-sheet" id="weeklyPrintArea"><div class="row"><h2>${c.name} 週間表 ${wds[0]}〜${wds[6]}</h2><div class="row no-print"><button class="btn out" onclick="printElement('weeklyPrintArea')">週間表印刷（A4横）</button><button class="btn blue" onclick="saveWeeklyA4(this)">保存（A4横）</button></div></div><div class="muted">日曜開始・土曜締め。月跨ぎあり。週間ボーナスは週最終日の月へ計上。</div><div class="scroll"><table>${payrollTableHead()}<tbody>${rows}${totalsRow(totals)}</tbody></table></div>${payrollSummaryCards(c,totals,'週間',base)}</div>`}
 function monthPortraitSummary(c,totals,base){
   let bonus=weeklyBonusSummary(totals), gross=totals.pay+bonus.totalBonus, deduction=gross*((c.deductionRate||0)/100), net=gross-deduction;
   return `<div class="monthlyTop">
@@ -2977,7 +2977,7 @@ function makeMonthSheet(){
   let c=state.casts.find(x=>x.id===weekCast.value);if(!c)return;
   let base=weekDate.value||state.businessDate, totals=initWeekTotals();
   let rows=monthDays(base).map(d=>monthPortraitRow(c,d,totals)).join('');
-  weekArea.innerHTML=`<div class="card printable-sheet monthly-portrait" id="monthlyPrintArea"><div class="row"><h2>${c.name} 月間表 ${monthKeyOf(base)}</h2><button class="btn blue no-print" onclick="screenshotElement('monthlyPrintArea')">スクショ保存</button><button class="btn out no-print" onclick="printElement('monthlyPrintArea')">月間表印刷</button></div><div class="muted">A4縦1枚用。上に給与まとめ、下に日別明細を縦で表示。</div>${monthPortraitSummary(c,totals,base)}<div class="section">日別明細</div><div class="scroll"><table class="monthPortraitTable">${monthPortraitHead()}<tbody>${rows}${monthPortraitTotalsRow(totals)}</tbody></table></div></div>`
+  weekArea.innerHTML=`<div class="card printable-sheet monthly-portrait" id="monthlyPrintArea"><div class="row"><h2>${c.name} 月間表 ${monthKeyOf(base)}</h2><button class="btn blue no-print" onclick="screenshotElement('monthlyPrintArea')">保存（A4横）</button><button class="btn out no-print" onclick="printElement('monthlyPrintArea')">月間表印刷（A4横）</button></div><div class="muted">A4横1枚用。上に給与まとめ、下に日別明細を表示。</div>${monthPortraitSummary(c,totals,base)}<div class="section">日別明細</div><div class="scroll"><table class="monthPortraitTable">${monthPortraitHead()}<tbody>${rows}${monthPortraitTotalsRow(totals)}</tbody></table></div></div>`
 }
 function showWeekHistoryMonth(ym){let casts=state.casts||[];let weeks=[];let first=ym+'-01', days=monthDays(first);let used=new Set();days.forEach(d=>{let wk=weekDates(d).join('|');if(!used.has(wk)){used.add(wk);weeks.push(d)}});historyDetail.innerHTML=`<div class="card" style="background:#f8fafc"><h3>週間表履歴 ${ym}</h3><p class="muted">月跨ぎありの週間表を履歴データから再表示します。</p>${casts.map(c=>`<div class="section">${c.name}</div>${weeks.map(w=>{let totals=initWeekTotals();let rows=weekDates(w).map(d=>payrollDayRow(c,d,totals)).join('');return `<div class="card" style="margin:10px 0"><h4>${weekDates(w)[0]}〜${weekDates(w)[6]}</h4><div class="scroll"><table>${payrollTableHead()}<tbody>${rows}${totalsRow(totals)}</tbody></table></div>${payrollSummaryCards(c,totals,'週間',w)}</div>`}).join('')}`).join('')}</div>`}
 function addCast(){let n=newCast.value.trim();if(!n)return;let base=normalizeBackSettings(state.defaultBackSettings);let custom=Number(newCastDeductionCustom.value||'');if(Number.isFinite(custom)&&custom>0)base.deductionRate=custom;let selected=Number(newCastDeduction?.value||'');if(!newCastDeductionCustom.value&&Number.isFinite(selected)&&selected>0)base.deductionRate=selected;let useDefault=Math.abs(base.deductionRate-state.defaultBackSettings.deductionRate)<0.0001;let same=(state.casts||[]).find(c=>(c.name||'').trim()===n);if(same){if(same.hidden){if(confirm(`${n} は非表示キャストに存在します。再表示しますか？`)){same.hidden=false;same.status=same.status||'off';same.useDefaultBack=useDefault;same.backSettings=base;same.deductionRate=base.deductionRate;same.hourly=base.hourly;newCast.value='';newCastDeductionCustom.value='';render();return;}}else{alert(`${n} は既に登録されています`);return;}}state.casts.push({id:uuid(),name:n,status:'off',hourly:base.hourly,deductionRate:base.deductionRate,useDefaultBack:useDefault,backSettings:base,logs:{},hidden:false});newCast.value='';newCastDeductionCustom.value='';render()}
@@ -3017,22 +3017,33 @@ function resetAllData(){
 
 let __blow2ndScreenshotLock = false;
 function loadHtml2Canvas(){
-  if(window.html2canvas) return Promise.resolve(window.html2canvas);
-  return new Promise((resolve,reject)=>{
-    const existing=document.getElementById('html2canvas-cdn');
-    if(existing){
-      existing.addEventListener('load',()=>resolve(window.html2canvas),{once:true});
-      existing.addEventListener('error',()=>reject(new Error('html2canvas load failed')),{once:true});
-      return;
+  if(typeof window.html2canvas==='function') return Promise.resolve(window.html2canvas);
+  if(window.__blow2ndH2cPromise) return window.__blow2ndH2cPromise;
+  window.__blow2ndH2cPromise=new Promise((resolve,reject)=>{
+    let script=document.getElementById('html2canvas-cdn');
+    const done=()=>{
+      if(typeof window.html2canvas==='function') resolve(window.html2canvas);
+      else reject(new Error('html2canvas loaded but unavailable'));
+    };
+    const fail=()=>reject(new Error('html2canvas load failed'));
+    if(script){
+      if(script.dataset.failed==='1'){script.remove();script=null;}
+      else{
+        script.addEventListener('load',done,{once:true});
+        script.addEventListener('error',fail,{once:true});
+        setTimeout(()=>{if(typeof window.html2canvas==='function')done();},50);
+        return;
+      }
     }
-    const script=document.createElement('script');
+    script=document.createElement('script');
     script.id='html2canvas-cdn';
     script.src='https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
     script.async=true;
-    script.onload=()=>resolve(window.html2canvas);
-    script.onerror=()=>reject(new Error('html2canvas load failed'));
+    script.onload=done;
+    script.onerror=()=>{script.dataset.failed='1';fail();};
     document.head.appendChild(script);
-  });
+  }).catch(e=>{window.__blow2ndH2cPromise=null;throw e;});
+  return window.__blow2ndH2cPromise;
 }
 function safeFileName(name){
   return String(name||'Blow2nd_POS')
@@ -3040,65 +3051,178 @@ function safeFileName(name){
     .replace(/\s+/g,'_')
     .slice(0,80);
 }
-async function screenshotElement(id){
+
+function isMobileLike(){
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent||'') ||
+    (navigator.maxTouchPoints>1 && /Macintosh/i.test(navigator.userAgent||'')) ||
+    !!window.matchMedia?.('(max-width: 900px)').matches;
+}
+async function deliverGeneratedPng(blob,fileName){
+  if(!blob) throw new Error('画像データを作成できませんでした。');
+  if(isMobileLike() && typeof File==='function' && navigator.share && navigator.canShare){
+    try{
+      const file=new File([blob],fileName,{type:'image/png'});
+      if(navigator.canShare({files:[file]})){
+        await navigator.share({files:[file],title:fileName});
+        return 'share';
+      }
+    }catch(e){
+      if(e && e.name==='AbortError') return 'cancel';
+      console.warn('Web Share fallback:',e);
+    }
+  }
+  const url=URL.createObjectURL(blob);
+  try{
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=fileName;
+    a.rel='noopener';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),15000);
+    return 'download';
+  }catch(e){
+    console.warn('download fallback:',e);
+    const w=window.open(url,'_blank');
+    if(!w) throw e;
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
+    return 'open';
+  }
+}
+function styleA4LandscapeClone(clone,id){
+  clone.querySelectorAll('button,.btn,.no-print,input[type="button"]').forEach(x=>x.remove());
+  clone.querySelectorAll('.scroll').forEach(x=>{
+    x.style.overflow='visible';
+    x.style.width='100%';
+    x.style.maxWidth='none';
+    x.style.height='auto';
+    x.style.maxHeight='none';
+  });
+  clone.style.width='100%';
+  clone.style.maxWidth='none';
+  clone.style.margin='0';
+  clone.style.background='#ffffff';
+  clone.style.color='#111827';
+  clone.style.border='0';
+  clone.style.boxShadow='none';
+  clone.querySelectorAll('.card').forEach(x=>{
+    x.style.boxShadow='none';
+    x.style.background='#fff';
+  });
+  clone.querySelectorAll('table').forEach(t=>{
+    t.style.width='100%';
+    t.style.tableLayout='fixed';
+    t.style.borderCollapse='collapse';
+  });
+  const font=id==='monthlyPrintArea'?'9px':id==='closingArea'?'10px':'10.5px';
+  const pad=id==='monthlyPrintArea'?'2px 2px':id==='closingArea'?'3px 3px':'3px 2px';
+  clone.querySelectorAll('th,td').forEach(cell=>{
+    cell.style.fontSize=font;
+    cell.style.padding=pad;
+    cell.style.lineHeight='1.12';
+    cell.style.whiteSpace='normal';
+    cell.style.wordBreak='break-word';
+  });
+  clone.querySelectorAll('.summary').forEach(x=>{
+    x.style.display='grid';
+    x.style.gridTemplateColumns=id==='monthlyPrintArea'?'repeat(6,minmax(0,1fr))':'repeat(5,minmax(0,1fr))';
+    x.style.gap='4px';
+  });
+  clone.querySelectorAll('.grid4').forEach(x=>{
+    x.style.display='grid';
+    x.style.gridTemplateColumns='repeat(4,minmax(0,1fr))';
+    x.style.gap='4px';
+  });
+}
+async function buildA4LandscapePng(id){
+  const source=document.getElementById(id);
+  if(!source) throw new Error('保存対象が見つかりません。先に表を表示してください。');
+  const html2canvas=await loadHtml2Canvas();
+  const clone=source.cloneNode(true);
+  styleA4LandscapeClone(clone,id);
+  const stage=document.createElement('div');
+  stage.setAttribute('aria-hidden','true');
+  stage.style.position='fixed';
+  stage.style.left='-100000px';
+  stage.style.top='0';
+  stage.style.width='1400px';
+  stage.style.padding='18px';
+  stage.style.boxSizing='border-box';
+  stage.style.background='#ffffff';
+  stage.style.color='#111827';
+  stage.style.zIndex='-1';
+  stage.appendChild(clone);
+  document.body.appendChild(stage);
+  try{
+    await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+    const captureScale=isMobileLike()?1.25:1.7;
+    const raw=await html2canvas(stage,{
+      backgroundColor:'#ffffff',
+      scale:captureScale,
+      useCORS:true,
+      allowTaint:true,
+      logging:false,
+      windowWidth:1440,
+      windowHeight:Math.max(900,stage.scrollHeight+40),
+      scrollX:0,
+      scrollY:0
+    });
+    const out=document.createElement('canvas');
+    out.width=3508;
+    out.height=2480;
+    const ctx=out.getContext('2d');
+    if(!ctx) throw new Error('Canvasを初期化できませんでした。');
+    ctx.fillStyle='#ffffff';
+    ctx.fillRect(0,0,out.width,out.height);
+    const margin=70;
+    const fit=Math.min((out.width-margin*2)/raw.width,(out.height-margin*2)/raw.height);
+    const drawW=Math.max(1,Math.round(raw.width*fit));
+    const drawH=Math.max(1,Math.round(raw.height*fit));
+    const x=Math.round((out.width-drawW)/2);
+    const y=Math.round((out.height-drawH)/2);
+    ctx.drawImage(raw,x,y,drawW,drawH);
+    return await new Promise((resolve,reject)=>
+      out.toBlob(b=>b?resolve(b):reject(new Error('PNG作成に失敗しました。')),'image/png')
+    );
+  }finally{
+    stage.remove();
+  }
+}
+async function saveElementA4Landscape(id,button){
   if(__blow2ndScreenshotLock){
-    alert('スクショ保存処理中です。少し待ってから押してください。');
+    alert('保存処理中です。処理が終わってからもう一度押してください。');
     return;
   }
   const source=document.getElementById(id);
   if(!source){
-    alert('スクショ対象が見つかりません。表を表示してから押してください。');
+    alert('保存対象が見つかりません。表を表示してから押してください。');
     return;
   }
   __blow2ndScreenshotLock=true;
-  const buttons=Array.from(source.querySelectorAll('button,.btn,.no-print,input[type="button"]'));
-  const oldDisplay=buttons.map(x=>x.style.display);
-  buttons.forEach(x=>x.style.display='none');
-  const oldOverflow=[];
-  source.querySelectorAll('.scroll').forEach(x=>{oldOverflow.push([x,x.style.overflow,x.style.maxHeight]);x.style.overflow='visible';x.style.maxHeight='none';});
+  const oldText=button?.textContent||'';
+  if(button){button.disabled=true;button.textContent='A4横で作成中…';}
   try{
-    const h2=source.querySelector('h2')?.textContent || 'Blow2nd POS';
-    const html2canvas=await loadHtml2Canvas();
-    await new Promise(r=>setTimeout(r,80));
-    const canvas=await html2canvas(source,{
-      backgroundColor:'#ffffff',
-      scale:Math.min(2, window.devicePixelRatio || 1.5),
-      useCORS:true,
-      allowTaint:true,
-      logging:false,
-      windowWidth:Math.max(document.documentElement.scrollWidth, source.scrollWidth),
-      windowHeight:Math.max(document.documentElement.scrollHeight, source.scrollHeight)
-    });
-    const fileName=safeFileName(h2)+'_'+new Date().toISOString().slice(0,10)+'.png';
-    if(canvas.toBlob){
-      canvas.toBlob(blob=>{
-        if(!blob){ alert('画像化に失敗しました。'); return; }
-        const url=URL.createObjectURL(blob);
-        const a=document.createElement('a');
-        a.href=url;
-        a.download=fileName;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(()=>URL.revokeObjectURL(url),1500);
-      },'image/png');
-    }else{
-      const a=document.createElement('a');
-      a.href=canvas.toDataURL('image/png');
-      a.download=fileName;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    }
+    const title=source.querySelector('h2')?.textContent || 'Blow2nd_POS';
+    const blob=await buildA4LandscapePng(id);
+    const fileName=safeFileName(title+'_'+new Date().toISOString().slice(0,10)+'_A4横')+'.png';
+    await deliverGeneratedPng(blob,fileName);
   }catch(e){
     console.error(e);
-    alert('スクショ保存に失敗しました。ネット接続がある状態で再度試してください。');
+    const msg=(e&&e.message)?e.message:'不明なエラー';
+    alert('A4横画像の保存に失敗しました。\n'+msg+'\nページを再読み込みしてもう一度試してください。');
   }finally{
-    buttons.forEach((x,i)=>x.style.display=oldDisplay[i]||'');
-    oldOverflow.forEach(([x,ov,mh])=>{x.style.overflow=ov;x.style.maxHeight=mh;});
+    if(button){button.disabled=false;button.textContent=oldText||'保存（A4横）';}
     __blow2ndScreenshotLock=false;
   }
 }
+
+async function screenshotElement(id){
+  return saveElementA4Landscape(id,null);
+}
+
+// 保存ボタン初回押下でライブラリ未読込にならないよう、起動後に先読みする。
+window.addEventListener('load',()=>setTimeout(()=>loadHtml2Canvas().catch(e=>console.warn('html2canvas preload:',e)),700));
 
 let __blow2ndPrintLock = false;
 
@@ -3143,16 +3267,16 @@ function printElement(id){
 
   // 1枚に収めるため、対象別に印刷専用の縮尺を固定。
   // 締め票は画面表示（スクショ）と同じカード型レイアウトを縮小してA4横1枚に印刷する。
-  const scale = isMonthly ? 1.00 : isClosing ? 0.60 : isWeekly ? 1.00 : 0.90;
-  const tableFont=isMonthly ? '7.8px' : isClosing ? '13px' : isWeekly ? '9.6px' : '7.4px';
+  const scale = isMonthly ? 0.68 : isClosing ? 0.60 : isWeekly ? 1.00 : 0.90;
+  const tableFont=isMonthly ? '9.4px' : isClosing ? '13px' : isWeekly ? '9.6px' : '7.4px';
   const cellPad=isMonthly ? '2.2px 2.4px' : isClosing ? '8px' : isWeekly ? '4.8px 3.8px' : '2px 1.8px';
-  const pageW = isMonthly ? 200 : 287; // 月間表のみA4縦、それ以外はA4横
-  const pageH = isMonthly ? 287 : 200;
+  const pageW = 287; // 全帳票をA4横
+  const pageH = 200;
   const innerW = (pageW / scale).toFixed(2);
   const innerH = (pageH / scale).toFixed(2);
 
   const css=`
-    @page { size: ${isMonthly?'A4 portrait':'A4 landscape'}; margin: 5mm; }
+    @page { size: A4 landscape; margin: 5mm; }
     *{ box-sizing:border-box!important; }
     html,body{
       margin:0!important; padding:0!important;
@@ -3202,6 +3326,28 @@ function printElement(id){
       .print-page{ break-after:avoid!important; page-break-after:avoid!important; }
     }
   `;
+
+  // スマホ / PWAは隠しiframeのprint()が不安定なため、印刷専用ページを前面で開く。
+  if(isMobileLike()){
+    try{
+      const popup=window.open('','_blank');
+      if(popup){
+        try{iframe.remove();}catch(e){}
+        const pdoc=popup.document;
+        pdoc.open();
+        pdoc.write(`<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${printTitle}</title><style>${css}
+          .mobile-print-btn{position:fixed;right:12px;top:12px;z-index:99999;border:0;border-radius:12px;background:#111827;color:#fff;padding:12px 18px;font-weight:900;font-size:16px}
+          @media print{.mobile-print-btn{display:none!important}}
+        </style></head><body><button class="mobile-print-btn" onclick="window.print()">印刷する</button><div class="print-viewport"><div class="print-page">${cloned.outerHTML}</div></div></body></html>`);
+        pdoc.close();
+        __blow2ndPrintLock=false;
+        setTimeout(()=>{try{popup.focus();popup.print();}catch(e){console.warn(e)}},450);
+        return;
+      }
+    }catch(e){
+      console.warn('mobile print popup fallback:',e);
+    }
+  }
 
   const doc=iframe.contentDocument || iframe.contentWindow.document;
   doc.open();
@@ -3879,113 +4025,7 @@ console.assert(typeof saveManualClosingSheet==='function','締め票入力保存
 
 <script>
 async function saveWeeklyA4(button){
-  const source=document.getElementById('weeklyPrintArea');
-  const selectedCast=state.casts.find(x=>x.id===weekCast.value);
-  const base=weekDate.value||state.businessDate;
-  const wds=weekDates(base);
-  const fileBase=safeFileName((selectedCast?selectedCast.name:'キャスト')+'_週間表_'+wds[0]+'_'+wds[6]);
-  if(!source || !source.querySelector('table')){
-    alert('先に週間表を表示してください。');
-    return;
-  }
-  if(typeof html2canvas!=='function'){
-    alert('画像保存機能を読み込めませんでした。通信を確認してページを再読み込みしてください。');
-    return;
-  }
-  if(button){
-    button.disabled=true;
-    button.dataset.oldText=button.textContent;
-    button.textContent='PCへ保存中…';
-  }
-
-  const clone=source.cloneNode(true);
-  clone.querySelectorAll('.no-print').forEach(x=>x.remove());
-  clone.querySelectorAll('.scroll').forEach(x=>{
-    x.style.overflow='visible';
-    x.style.width='100%';
-    x.style.maxWidth='none';
-    x.style.height='auto';
-    x.style.maxHeight='none';
-  });
-
-  const stage=document.createElement('div');
-  stage.style.position='fixed';
-  stage.style.left='-100000px';
-  stage.style.top='0';
-  stage.style.width='1400px';
-  stage.style.padding='18px';
-  stage.style.boxSizing='border-box';
-  stage.style.background='#ffffff';
-  stage.style.color='#111827';
-  stage.appendChild(clone);
-  document.body.appendChild(stage);
-
-  try{
-    clone.style.width='100%';
-    clone.style.maxWidth='none';
-    clone.style.margin='0';
-    clone.style.background='#ffffff';
-    clone.style.border='0';
-    clone.style.boxShadow='none';
-    clone.querySelectorAll('table').forEach(t=>{
-      t.style.width='100%';
-      t.style.tableLayout='fixed';
-      t.style.borderCollapse='collapse';
-    });
-    clone.querySelectorAll('th,td').forEach(cell=>{
-      cell.style.fontSize='10px';
-      cell.style.padding='3px 2px';
-      cell.style.lineHeight='1.15';
-      cell.style.whiteSpace='normal';
-      cell.style.wordBreak='break-word';
-    });
-    clone.querySelectorAll('.summary').forEach(x=>{
-      x.style.display='grid';
-      x.style.gridTemplateColumns='repeat(5,minmax(0,1fr))';
-      x.style.gap='5px';
-    });
-    clone.querySelectorAll('.grid4').forEach(x=>{
-      x.style.display='grid';
-      x.style.gridTemplateColumns='repeat(4,minmax(0,1fr))';
-      x.style.gap='5px';
-    });
-
-    await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-    const raw=await html2canvas(stage,{backgroundColor:'#ffffff',scale:2,useCORS:true,logging:false,windowWidth:stage.scrollWidth,windowHeight:stage.scrollHeight});
-
-    const out=document.createElement('canvas');
-    out.width=3508;
-    out.height=2480;
-    const ctx=out.getContext('2d');
-    ctx.fillStyle='#ffffff';
-    ctx.fillRect(0,0,out.width,out.height);
-    const margin=70;
-    const fit=Math.min((out.width-margin*2)/raw.width,(out.height-margin*2)/raw.height);
-    const drawW=Math.max(1,Math.round(raw.width*fit));
-    const drawH=Math.max(1,Math.round(raw.height*fit));
-    const x=Math.round((out.width-drawW)/2);
-    const y=Math.round((out.height-drawH)/2);
-    ctx.drawImage(raw,x,y,drawW,drawH);
-
-    const png=await new Promise((resolve,reject)=>out.toBlob(b=>b?resolve(b):reject(new Error('PNG作成に失敗しました。')),'image/png'));
-    const url=URL.createObjectURL(png);
-    const a=document.createElement('a');
-    a.href=url;
-    a.download=safeFileName(fileBase+'_A4横')+'.png';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),3000);
-  }catch(e){
-    console.error(e);
-    alert('週間表の保存に失敗しました。\n'+(e&&e.message?e.message:'表を再表示してからもう一度実行してください。'));
-  }finally{
-    stage.remove();
-    if(button){
-      button.disabled=false;
-      button.textContent=button.dataset.oldText||'スクショ保存（横A4）';
-    }
-  }
+  return saveElementA4Landscape('weeklyPrintArea',button);
 }
 
 </script>
