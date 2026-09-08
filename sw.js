@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blow2nd-pos-tanegashima-mobile-v4-smartphone2';
+const CACHE_NAME = 'blow2nd-pos-tanegashima-mobile-v5-anejo';
 const STATIC_ASSETS = [
   './index.html',
   './manifest.json',
