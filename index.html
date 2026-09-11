@@ -345,6 +345,7 @@ table{border-collapse:collapse;width:100%;background:#fff}th,td{border:1px solid
 .viewer-badge{display:none;background:#7c3aed;color:#fff;font-weight:900;padding:7px 12px;border-radius:999px;font-size:13px}
 body.viewer-mode .viewer-badge{display:inline-flex}
 body.viewer-mode #settings,body.viewer-mode #cloud{display:none!important}
+body.viewer-mode .manager-edit-only{display:none!important}
 body.viewer-mode .viewer-hidden{display:none!important}
 body.viewer-mode input:disabled,body.viewer-mode select:disabled,body.viewer-mode textarea:disabled{opacity:.75;background:#f1f5f9;color:#334155}
 
@@ -513,7 +514,21 @@ body.viewer-mode #tableCards>.card{cursor:pointer}
 
   <section id="tables" class="screen active"><div class="layout"><div class="cards" id="tableCards"></div><div class="card" id="tablePanel"></div></div></section>
   <section id="overview" class="screen"><div class="row"><h2>営業一覧</h2><button class="btn out" onclick="renderOverview()">再読み込み</button></div><p class="muted">全卓の稼働状況、本日の会計、キャスト出勤状況を一画面で確認できます。</p><div id="overviewArea"></div></section>
-  <section id="casts" class="screen"><div class="row"><h2>キャスト出退勤</h2><button class="btn warn" onclick="clockOutAll()">一括退勤</button></div><div class="cards" id="castCards"></div></section>
+  <section id="casts" class="screen">
+    <div class="row"><h2>キャスト出退勤</h2><button class="btn warn" onclick="clockOutAll()">一括退勤</button></div>
+    <div class="cards" id="castCards"></div>
+    <div class="card manager-edit-only" style="margin-top:12px">
+      <h2>キャスト登録</h2>
+      <p class="muted">店長・管理者がキャストの追加、名前変更、給与・バック設定、表示/非表示を変更できます。</p>
+      <div class="grid3">
+        <div><label>名前</label><input id="newCast"></div>
+        <div><label>控除率</label><select id="newCastDeduction"><option value="10.21">10.21%</option><option value="11">11%</option><option value="20">20%</option></select></div>
+        <div><label>任意控除率</label><input id="newCastDeductionCustom" type="number" step="0.01" placeholder="空なら店舗標準"></div>
+      </div>
+      <button class="btn" style="margin-top:8px" onclick="addCast()">追加</button>
+      <div class="scroll" style="margin-top:10px"><table><thead><tr><th>名前/状態</th><th>名前変更</th><th>給与・バック</th><th>操作</th></tr></thead><tbody id="castSettingRows"></tbody></table></div>
+    </div>
+  </section>
   <section id="manage" class="screen">
     <div class="row"><h2>管理</h2><button class="btn ok" onclick="startBusinessDay()">営業開始</button><button class="btn blue" onclick="openClosingSheetInput()">締め票入力</button><button class="btn bad" onclick="endBusinessDay()">営業終了</button><button class="btn blue" onclick="makeClosing()">締め票作成</button><button class="btn out" onclick="openHistoryPanel()">履歴</button><button class="btn blue" onclick="openReceiptEditPanel()">伝票修正</button><button class="btn warn" onclick="openUnpaidPanel()">未収</button><button class="btn warn" onclick="openProfitLock()">利益率</button><button class="btn out" onclick="makeMonthly()">月締め票</button><button class="btn out" onclick="saveBackupManual()">バックアップ保存</button><button class="btn blue" onclick="openScreen('backup')">バックアップを見る</button></div>
     <div class="summary" id="manageSummary"></div>
@@ -578,7 +593,7 @@ body.viewer-mode #tableCards>.card{cursor:pointer}
     </div>
   </section>
 
-  <section id="settings" class="screen"><div class="card"><h2>店舗標準 給与・バック設定</h2><p class="muted">ここを変えると標準設定を使うキャスト、新規追加キャスト、給与計算・バック計算に反映します。</p><div class="grid4" id="defaultBackSettingsBox"></div></div><div class="grid2" style="margin-top:12px"><div class="card"><h2>キャスト登録</h2><div class="grid3"><div><label>名前</label><input id="newCast"></div><div><label>控除率</label><select id="newCastDeduction"><option value="10.21">10.21%</option><option value="11">11%</option><option value="20">20%</option></select></div><div><label>任意控除率</label><input id="newCastDeductionCustom" type="number" step="0.01" placeholder="空なら店舗標準"></div></div><button class="btn" style="margin-top:8px" onclick="addCast()">追加</button><div class="scroll" style="margin-top:10px"><table><thead><tr><th>名前/状態</th><th>名前変更</th><th>給与・バック</th><th>操作</th></tr></thead><tbody id="castSettingRows"></tbody></table></div></div><div class="card"><h2>シャンパン原価</h2><div class="scroll"><table><thead><tr><th>商品</th><th class="right">売価</th><th class="right">原価</th></tr></thead><tbody id="champRows"></tbody></table></div></div></div><div class="card" style="margin-top:12px;border-color:#fecaca"><h2 class="danger">初期化</h2><p class="muted">試運転データを消して、キャスト・卓・売上・履歴・仕入れ支出をすべて初期状態に戻します。</p><button class="btn bad" onclick="resetAllData()">全データ初期化</button>
+  <section id="settings" class="screen"><div class="card"><h2>店舗標準 給与・バック設定</h2><p class="muted">ここを変えると標準設定を使うキャスト、新規追加キャスト、給与計算・バック計算に反映します。</p><div class="grid4" id="defaultBackSettingsBox"></div></div><div class="card" style="margin-top:12px"><h2>シャンパン原価</h2><div class="scroll"><table><thead><tr><th>商品</th><th class="right">売価</th><th class="right">原価</th></tr></thead><tbody id="champRows"></tbody></table></div></div><div class="card" style="margin-top:12px;border-color:#fecaca"><h2 class="danger">初期化</h2><p class="muted">試運転データを消して、キャスト・卓・売上・履歴・仕入れ支出をすべて初期状態に戻します。</p><button class="btn bad" onclick="resetAllData()">全データ初期化</button>
 <button class="btn out" onclick="document.getElementById('settingRestoreFile').click()">バックアップ読込</button>
 <input id="settingRestoreFile" type="file" accept="application/json" style="display:none" onchange="restoreBackup(event)">
 <hr style="border:none;border-top:1px solid #e5e7eb;margin:14px 0">
