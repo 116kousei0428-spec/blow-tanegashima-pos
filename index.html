@@ -345,7 +345,6 @@ table{border-collapse:collapse;width:100%;background:#fff}th,td{border:1px solid
 .viewer-badge{display:none;background:#7c3aed;color:#fff;font-weight:900;padding:7px 12px;border-radius:999px;font-size:13px}
 body.viewer-mode .viewer-badge{display:inline-flex}
 body.viewer-mode #settings,body.viewer-mode #cloud{display:none!important}
-body.viewer-mode .manager-edit-only{display:none!important}
 body.viewer-mode .viewer-hidden{display:none!important}
 body.viewer-mode input:disabled,body.viewer-mode select:disabled,body.viewer-mode textarea:disabled{opacity:.75;background:#f1f5f9;color:#334155}
 
@@ -514,23 +513,9 @@ body.viewer-mode #tableCards>.card{cursor:pointer}
 
   <section id="tables" class="screen active"><div class="layout"><div class="cards" id="tableCards"></div><div class="card" id="tablePanel"></div></div></section>
   <section id="overview" class="screen"><div class="row"><h2>営業一覧</h2><button class="btn out" onclick="renderOverview()">再読み込み</button></div><p class="muted">全卓の稼働状況、本日の会計、キャスト出勤状況を一画面で確認できます。</p><div id="overviewArea"></div></section>
-  <section id="casts" class="screen">
-    <div class="row"><h2>キャスト出退勤</h2><button class="btn warn" onclick="clockOutAll()">一括退勤</button></div>
-    <div class="cards" id="castCards"></div>
-    <div class="card manager-edit-only" style="margin-top:12px">
-      <h2>キャスト登録</h2>
-      <p class="muted">店長・管理者がキャストの追加、名前変更、給与・バック設定、表示/非表示を変更できます。</p>
-      <div class="grid3">
-        <div><label>名前</label><input id="newCast"></div>
-        <div><label>控除率</label><select id="newCastDeduction"><option value="10.21">10.21%</option><option value="11">11%</option><option value="20">20%</option></select></div>
-        <div><label>任意控除率</label><input id="newCastDeductionCustom" type="number" step="0.01" placeholder="空なら店舗標準"></div>
-      </div>
-      <button class="btn" style="margin-top:8px" onclick="addCast()">追加</button>
-      <div class="scroll" style="margin-top:10px"><table><thead><tr><th>名前/状態</th><th>名前変更</th><th>給与・バック</th><th>操作</th></tr></thead><tbody id="castSettingRows"></tbody></table></div>
-    </div>
-  </section>
+  <section id="casts" class="screen"><div class="row"><h2>キャスト出退勤</h2><button class="btn warn" onclick="clockOutAll()">一括退勤</button></div><div class="cards" id="castCards"></div></section>
   <section id="manage" class="screen">
-    <div class="row"><h2>管理</h2><button class="btn ok" onclick="startBusinessDay()">営業開始</button><button class="btn blue" onclick="openClosingSheetInput()">締め票入力</button><button class="btn bad" onclick="endBusinessDay()">営業終了</button><button class="btn blue" onclick="makeClosing()">締め票作成</button><button class="btn out" onclick="openHistoryPanel()">履歴</button><button class="btn blue" onclick="openReceiptEditPanel()">伝票修正</button><button class="btn warn" onclick="openUnpaidPanel()">未収</button><button class="btn warn" onclick="openProfitLock()">利益率</button><button class="btn out" onclick="makeMonthly()">月締め票</button><button class="btn out" onclick="saveBackupManual()">バックアップ保存</button><button class="btn blue" onclick="openScreen('backup')">バックアップを見る</button></div>
+    <div class="row"><h2>管理</h2><button id="manageWeeklyBtn" class="btn blue" onclick="openScreen('weeklyOverview')">週間</button><button class="btn ok" onclick="startBusinessDay()">営業開始</button><button class="btn blue" onclick="openClosingSheetInput()">締め票入力</button><button class="btn bad" onclick="endBusinessDay()">営業終了</button><button class="btn blue" onclick="makeClosing()">締め票作成</button><button class="btn out" onclick="openHistoryPanel()">履歴</button><button class="btn blue" onclick="openReceiptEditPanel()">伝票修正</button><button class="btn warn" onclick="openUnpaidPanel()">未収</button><button class="btn warn" onclick="openProfitLock()">利益率</button><button class="btn out" onclick="makeMonthly()">月締め票</button><button class="btn out" onclick="saveBackupManual()">バックアップ保存</button><button class="btn blue" onclick="openScreen('backup')">バックアップを見る</button></div>
     <div class="summary" id="manageSummary"></div>
     <div class="card" id="extensionAnalyticsCard" style="margin-top:12px">
       <div class="row"><h3>延長分析</h3><button class="btn out small" onclick="renderExtensionAnalytics()">再計算</button></div>
@@ -593,7 +578,7 @@ body.viewer-mode #tableCards>.card{cursor:pointer}
     </div>
   </section>
 
-  <section id="settings" class="screen"><div class="card"><h2>店舗標準 給与・バック設定</h2><p class="muted">ここを変えると標準設定を使うキャスト、新規追加キャスト、給与計算・バック計算に反映します。</p><div class="grid4" id="defaultBackSettingsBox"></div></div><div class="card" style="margin-top:12px"><h2>シャンパン原価</h2><div class="scroll"><table><thead><tr><th>商品</th><th class="right">売価</th><th class="right">原価</th></tr></thead><tbody id="champRows"></tbody></table></div></div><div class="card" style="margin-top:12px;border-color:#fecaca"><h2 class="danger">初期化</h2><p class="muted">試運転データを消して、キャスト・卓・売上・履歴・仕入れ支出をすべて初期状態に戻します。</p><button class="btn bad" onclick="resetAllData()">全データ初期化</button>
+  <section id="settings" class="screen"><div class="card"><h2>店舗標準 給与・バック設定</h2><p class="muted">ここを変えると標準設定を使うキャスト、新規追加キャスト、給与計算・バック計算に反映します。</p><div class="grid4" id="defaultBackSettingsBox"></div></div><div class="grid2" style="margin-top:12px"><div class="card"><h2>キャスト登録</h2><div class="grid3"><div><label>名前</label><input id="newCast"></div><div><label>控除率</label><select id="newCastDeduction"><option value="10.21">10.21%</option><option value="11">11%</option><option value="20">20%</option></select></div><div><label>任意控除率</label><input id="newCastDeductionCustom" type="number" step="0.01" placeholder="空なら店舗標準"></div></div><button class="btn" style="margin-top:8px" onclick="addCast()">追加</button><div class="scroll" style="margin-top:10px"><table><thead><tr><th>名前/状態</th><th>名前変更</th><th>給与・バック</th><th>操作</th></tr></thead><tbody id="castSettingRows"></tbody></table></div></div><div class="card"><h2>シャンパン原価</h2><div class="scroll"><table><thead><tr><th>商品</th><th class="right">売価</th><th class="right">原価</th></tr></thead><tbody id="champRows"></tbody></table></div></div></div><div class="card" style="margin-top:12px;border-color:#fecaca"><h2 class="danger">初期化</h2><p class="muted">試運転データを消して、キャスト・卓・売上・履歴・仕入れ支出をすべて初期状態に戻します。</p><button class="btn bad" onclick="resetAllData()">全データ初期化</button>
 <button class="btn out" onclick="document.getElementById('settingRestoreFile').click()">バックアップ読込</button>
 <input id="settingRestoreFile" type="file" accept="application/json" style="display:none" onchange="restoreBackup(event)">
 <hr style="border:none;border-top:1px solid #e5e7eb;margin:14px 0">
@@ -4739,6 +4724,92 @@ async function saveWeeklyA4(button){
   }
   window.addEventListener('resize',()=>{if(isMobileLike())refreshMobileQuickActions()});
   setTimeout(refreshMobileQuickActions,300);
+})();
+</script>
+
+<!-- COMMON_POS_PARITY_PATCH_2026_09_17 -->
+<script id="common-pos-parity-20260917">
+(function(){
+  'use strict';
+  if(window.__COMMON_POS_PARITY_20260917__) return;
+  window.__COMMON_POS_PARITY_20260917__=true;
+
+  // 鹿児島で先行していた「選択日の締め票を直接印刷」を共通化。
+  // makeClosing() は描画のみで保存処理を行わないため、営業日を一時的に切り替えて
+  // 既存の店舗別締め票ロジックをそのまま使い、印刷用DOMを生成する。
+  if(typeof window.printManualClosingDate!=='function'){
+    window.printManualClosingDate=function(){
+      const dateInput=document.getElementById('manualCloseDate');
+      const d=(dateInput&&dateInput.value)||((typeof state!=='undefined'&&state)?state.businessDate:'');
+      if(!d){ alert('営業日を選択してください。'); return; }
+      if(typeof window.makeClosing!=='function' || typeof window.printElement!=='function'){
+        alert('締め票印刷機能を読み込めませんでした。');
+        return;
+      }
+      const area=document.getElementById('closingArea');
+      const oldHtml=area?area.innerHTML:'';
+      const oldDate=(typeof state!=='undefined'&&state)?state.businessDate:'';
+      try{
+        if(typeof state!=='undefined'&&state) state.businessDate=d;
+        window.makeClosing();
+        window.printElement('closingArea');
+      }catch(err){
+        console.error('過去締め票印刷エラー',err);
+        alert('締め票の印刷準備に失敗しました。');
+      }finally{
+        if(typeof state!=='undefined'&&state && oldDate) state.businessDate=oldDate;
+        if(area) area.innerHTML=oldHtml;
+      }
+    };
+  }
+
+  function ensureClosingPrintButton(){
+    const dateInput=document.getElementById('manualCloseDate');
+    const saveBtn=document.getElementById('manualClosingSaveButton')||document.getElementById('manualSaveBtn');
+    const row=saveBtn&&saveBtn.parentElement;
+    if(!dateInput||!row||document.getElementById('manualClosingPrintButton')) return;
+    const b=document.createElement('button');
+    b.id='manualClosingPrintButton';
+    b.type='button';
+    b.className='btn blue';
+    b.textContent='この日の締め票を印刷';
+    b.onclick=()=>window.printManualClosingDate();
+    row.appendChild(b);
+  }
+
+  const originalOpenClosing=window.openClosingSheetInput;
+  if(typeof originalOpenClosing==='function' && !originalOpenClosing.__commonParityWrapped){
+    const wrapped=function(){
+      const r=originalOpenClosing.apply(this,arguments);
+      setTimeout(ensureClosingPrintButton,40);
+      return r;
+    };
+    wrapped.__commonParityWrapped=true;
+    window.openClosingSheetInput=wrapped;
+  }
+
+  // 既に締め票入力モーダルが開いている状態で更新された場合にも反映。
+  setTimeout(ensureClosingPrintButton,80);
+})();
+</script>
+
+<!-- COMMON_POS_PARITY_MAINTENANCE_2026_09_17 -->
+<script id="common-pos-parity-maintenance-20260917">
+(function(){
+  'use strict';
+  if(window.__TANE_COMMON_MAINTENANCE_20260917__)return;window.__TANE_COMMON_MAINTENANCE_20260917__=true;
+  function storageBytes(){let total=0;try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i)||'',v=localStorage.getItem(k)||'';total+=(k.length+v.length)*2}}catch(e){}return total}
+  function bytesLabel(n){return n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFixed(2)+' MB'}
+  window.renderMaintenanceStatus=function(){const el=document.getElementById('maintenanceStatus');if(!el)return;const mode=(typeof STORAGE_MODE_KEY!=='undefined'&&localStorage.getItem(STORAGE_MODE_KEY)==='idb')?'IndexedDB':'localStorage';el.textContent=`保存方式：${mode} / ブラウザ保存使用量（概算）：${bytesLabel(storageBytes())} / 表示用バックアップ履歴：${(state.backups||[]).length}件`};
+  window.runSafeMaintenance=function(){
+    if(!confirm('安全メンテナンスを実行します。\n\n削除：表示用バックアップ履歴のみ\n保持：過去会計・給与・締め票・キャスト・Firebase設定・営業データ\n\n実行しますか？'))return;
+    const before=(state.backups||[]).length;state.backups=[];save();renderMaintenanceStatus();alert(`メンテナンス完了。\n表示用バックアップ履歴：${before}件 → 0件`);
+  };
+  const settings=document.getElementById('settings');
+  if(settings&&!document.getElementById('maintenanceStatus')){
+    const card=document.createElement('div');card.className='card';card.style.marginBottom='12px';card.innerHTML='<div class="row"><h3>メンテナンス</h3><button class="btn out small" onclick="renderMaintenanceStatus()">再確認</button></div><p class="muted">過去会計・給与・締め票・キャスト・Firebase設定・営業データは削除しません。表示用バックアップ履歴だけを整理します。</p><button class="btn warn" onclick="runSafeMaintenance()">安全メンテナンス実行</button><p id="maintenanceStatus" class="muted" style="margin-top:8px"></p>';
+    settings.insertBefore(card,settings.firstChild);renderMaintenanceStatus();
+  }
 })();
 </script>
 </body>
