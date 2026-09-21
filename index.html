@@ -788,7 +788,7 @@ const FIXED_CLOUD_DB_URL='https://blow-pos-default-rtdb.asia-southeast1.firebase
 const FIXED_CLOUD_PATH='blow2nd/tanegashima';
 const BASIC_SET_MIN=60, HALF_EXTEND_MIN=30, FULL_EXTEND_MIN=60;
 const JOUNAI_BACK=500;
-const CH=[['ori','オリシャン','オリシャン',20000,4000],['orivip','オリシャンVIP','オリシャン',40000,5000],['vy','ヴーヴイエロー','ヴーヴ',30000,8000],['vw','ヴーヴホワイト','ヴーヴ',35000,9000],['moet','モエピカ','モエ',50000,10000],['belle','ベルエポック','ベル',80000,25000],['beller','ベルエポックロゼ','ベル',150000,46000],['soumei','ソウメイ','ソウメイ',100000,28000],['soumeib','ソウメイブルー','ソウメイ',150000,45000],['soumeir','ソウメイロゼ','ソウメイ',180000,48000],['soumeip','ソウメイプラチナ','ソウメイ',300000,80000],['ag','アルマンドゴールド','アルマンド',200000,50000],['ap','アルマンドピンク','アルマンド',280000,70000],['agr','アルマンドグリーン','アルマンド',350000,100000],['as','アルマンド信号機','アルマンド',800000,0]].map(x=>({id:x[0],name:x[1],cat:x[2],price:x[3],cost:x[4]}));
+const CH=[['ori','オリシャン','オリシャン',20000,4000],['orivip','オリシャンVIP','オリシャン',40000,5000],['vy','ヴーヴイエロー','ヴーヴ',30000,8000],['vw','ヴーヴホワイト','ヴーヴ',35000,9000],['moetice','モエアイス','モエ',38000,10000],['moet','モエピカ','モエ',50000,10000],['belle','ベルエポック','ベル',80000,25000],['beller','ベルエポックロゼ','ベル',150000,46000],['soumei','ソウメイ','ソウメイ',100000,28000],['soumeib','ソウメイブルー','ソウメイ',150000,45000],['soumeir','ソウメイロゼ','ソウメイ',180000,48000],['soumeip','ソウメイプラチナ','ソウメイ',300000,80000],['ag','アルマンドゴールド','アルマンド',200000,50000],['ap','アルマンドピンク','アルマンド',280000,70000],['agr','アルマンドグリーン','アルマンド',350000,100000],['as','アルマンド信号機','アルマンド',800000,0]].map(x=>({id:x[0],name:x[1],cat:x[2],price:x[3],cost:x[4]}));
 let now=new Date(), active='A1', target='', startId='', receiptEditPending=null, profitUnlocked=sessionStorage.getItem('lounge_pos_profit_unlocked')==='1', historyUnlocked=sessionStorage.getItem('lounge_pos_history_unlocked')==='1', receiptEditUnlocked=sessionStorage.getItem('lounge_pos_receipt_edit_unlocked')==='1';
 function emptyTable(id){return{id,status:'empty',startedAt:null,serviceMinutes:BASIC_SET_MIN,guests:1,payment:'cash',nominations:[],dohan:[],jounai:[],jounaiCounts:{},after:[],items:[],prepayments:[],note:''}}
 function init(){return{businessDate:bizDate(),casts:[],tables:TABLES.map(emptyTable),sales:[],expenses:[]}}
@@ -4810,6 +4810,200 @@ async function saveWeeklyA4(button){
     const card=document.createElement('div');card.className='card';card.style.marginBottom='12px';card.innerHTML='<div class="row"><h3>メンテナンス</h3><button class="btn out small" onclick="renderMaintenanceStatus()">再確認</button></div><p class="muted">過去会計・給与・締め票・キャスト・Firebase設定・営業データは削除しません。表示用バックアップ履歴だけを整理します。</p><button class="btn warn" onclick="runSafeMaintenance()">安全メンテナンス実行</button><p id="maintenanceStatus" class="muted" style="margin-top:8px"></p>';
     settings.insertBefore(card,settings.firstChild);renderMaintenanceStatus();
   }
+})();
+</script>
+
+<!-- COMMON_OPERATION_PARITY_V2_GUEST_ANALYTICS_20260917 -->
+<script id="common-operation-parity-v2-guest-analytics-20260917">
+(function(){
+  'use strict';
+  if(window.__COMMON_GUEST_ANALYTICS_V2__) return;
+  window.__COMMON_GUEST_ANALYTICS_V2__=true;
+
+  function salesPool(){
+    const out=[],seen=new Set();
+    const add=s=>{
+      if(!s||!s.businessDate)return;
+      const key=String(s.id||`${s.businessDate}|${s.checkoutAt||''}|${s.table?.id||''}|${out.length}`);
+      if(seen.has(key))return; seen.add(key); out.push(s);
+    };
+    (state.sales||[]).forEach(add);
+    (state.businessSheets||[]).forEach(sh=>{ if(sh&&Array.isArray(sh.sales)) sh.sales.forEach(add); });
+    return out;
+  }
+  function saleGuests(s){
+    const t=s&&s.table||{};
+    const direct=Number(t.guests);
+    if(Number.isFinite(direct)&&direct>0)return direct;
+    const sex=(Number(t.maleGuests)||0)+(Number(t.femaleGuests)||0);
+    return sex>0?sex:0;
+  }
+  function monthPrefix(date){ return String(date||state.businessDate||'').slice(0,7); }
+  function yenSafe(n){ try{return typeof yen==='function'?yen(n):Math.round(Number(n)||0).toLocaleString('ja-JP')}catch(e){return String(Math.round(Number(n)||0))} }
+  function escSafe(v){ try{return typeof esc==='function'?esc(v):String(v??'')}catch(e){return String(v??'')} }
+
+  window.renderCommonGuestAnalytics=function(){
+    const root=document.getElementById('commonGuestAnalyticsArea'); if(!root)return;
+    const dateEl=document.getElementById('commonGuestAnalyticsDate');
+    const base=(dateEl&&dateEl.value)||state.businessDate;
+    if(dateEl&&!dateEl.value)dateEl.value=base;
+    const all=salesPool();
+    const day=all.filter(s=>s.businessDate===base);
+    const month=all.filter(s=>String(s.businessDate||'').startsWith(monthPrefix(base)));
+    const dayGuests=day.reduce((a,s)=>a+saleGuests(s),0);
+    const monthGuests=month.reduce((a,s)=>a+saleGuests(s),0);
+    const dayTables=day.length, monthTables=month.length;
+    const active=(state.tables||[]).filter(t=>t&&t.status==='busy');
+    const activeGuests=active.reduce((a,t)=>a+(Number(t.guests)||((Number(t.maleGuests)||0)+(Number(t.femaleGuests)||0))),0);
+    const avgDay=dayTables?dayGuests/dayTables:0, avgMonth=monthTables?monthGuests/monthTables:0;
+    const byTable={};
+    day.forEach(s=>{const id=String(s.table?.id||'-');const g=saleGuests(s);byTable[id]=(byTable[id]||0)+g});
+    const rows=Object.entries(byTable).sort((a,b)=>b[1]-a[1]).map(([id,g])=>`<tr><td>${escSafe(id)}</td><td class="right">${g}名</td></tr>`).join('')||'<tr><td colspan="2" class="muted">会計済みデータなし</td></tr>';
+    root.innerHTML=`
+      <div class="card" style="margin-top:12px">
+        <div class="row"><h3>入客分析</h3><button class="btn out small" onclick="renderCommonGuestAnalytics()">再計算</button></div>
+        <div class="grid2"><div><label>基準日</label><input id="commonGuestAnalyticsDate" type="date" value="${escSafe(base)}" onchange="renderCommonGuestAnalytics()"></div><div class="info"><b>対象月</b><span>${escSafe(monthPrefix(base))}</span></div></div>
+        <div class="summary" style="margin-top:10px">
+          <div class="card stat"><div class="label">当日入客</div><div class="val">${dayGuests}名</div></div>
+          <div class="card stat"><div class="label">当日会計卓</div><div class="val">${dayTables}卓</div></div>
+          <div class="card stat"><div class="label">当日平均</div><div class="val">${avgDay.toFixed(2).replace(/0+$/,'').replace(/\.$/,'')}名/卓</div></div>
+          <div class="card stat"><div class="label">現在入客</div><div class="val">${activeGuests}名</div></div>
+          <div class="card stat"><div class="label">月間入客</div><div class="val">${monthGuests}名</div></div>
+          <div class="card stat"><div class="label">月間会計卓</div><div class="val">${monthTables}卓</div></div>
+          <div class="card stat"><div class="label">月間平均</div><div class="val">${avgMonth.toFixed(2).replace(/0+$/,'').replace(/\.$/,'')}名/卓</div></div>
+        </div>
+        <div class="scroll" style="margin-top:10px"><table><thead><tr><th>当日 卓</th><th class="right">入客数</th></tr></thead><tbody>${rows}</tbody></table></div>
+        <p class="muted" style="margin-top:8px">会計済み伝票の人数を基準に集計し、現在稼働中の人数は別枠で表示します。給与・バック計算には影響しません。</p>
+      </div>`;
+  };
+
+  function install(){
+    const manage=document.getElementById('manage'); if(!manage)return;
+    if(!document.getElementById('commonGuestAnalyticsArea')){
+      const holder=document.createElement('div'); holder.id='commonGuestAnalyticsArea';
+      const anchor=document.getElementById('visitorCountArea')||document.getElementById('receiptAuditArea')||document.getElementById('historyPanel');
+      if(anchor&&anchor.parentNode===manage) manage.insertBefore(holder,anchor); else manage.appendChild(holder);
+    }
+    const head=manage.querySelector('.row');
+    if(head&&!head.querySelector('[data-common-guest-analytics]')){
+      const b=document.createElement('button');b.className='btn blue';b.dataset.commonGuestAnalytics='1';b.textContent='入客分析';b.onclick=()=>{document.getElementById('commonGuestAnalyticsArea')?.scrollIntoView({behavior:'smooth',block:'start'});renderCommonGuestAnalytics()};
+      const hist=[...head.querySelectorAll('button')].find(x=>x.textContent.trim()==='履歴');
+      if(hist)hist.insertAdjacentElement('afterend',b);else head.appendChild(b);
+    }
+    renderCommonGuestAnalytics();
+  }
+  install();
+  const oldRender=window.render;
+  if(typeof oldRender==='function'&&!oldRender.__commonGuestAnalyticsV2){
+    const wrapped=function(){const r=oldRender.apply(this,arguments);try{renderCommonGuestAnalytics()}catch(e){}return r};
+    wrapped.__commonGuestAnalyticsV2=true;window.render=wrapped;
+  }
+})();
+</script>
+
+<!-- COMMON_OPERATION_PARITY_V2_TANE_GUEST_JOIN_20260917 -->
+<script id="common-operation-parity-v2-tane-guest-join-20260917">
+(function(){
+  'use strict';
+  if(window.__TANE_GUEST_JOIN_PARITY_V2__)return;
+  window.__TANE_GUEST_JOIN_PARITY_V2__=true;
+  const JOIN_MAX_HOUR=25, JOIN_MAX_MINUTES=1500;
+  const joinItems=t=>(Array.isArray(t&&t.items)?t.items:[]).filter(i=>i&&i.type==='guestJoin');
+  const joinCount=t=>joinItems(t).reduce((a,i)=>a+(Number(i.guestCount)||0)*(Number(i.qty)||1),0);
+  const joinCharge=t=>joinItems(t).reduce((a,i)=>a+(Number(i.price)||0)*(Number(i.qty)||1),0);
+  function ensureJoinModel(t){
+    if(!t)return t;t.items=Array.isArray(t.items)?t.items:[];
+    const joined=joinCount(t),current=Math.max(1,Number(t.guests)||1);
+    if(!Number.isFinite(Number(t.baseGuests)))t.baseGuests=Math.max(1,current-joined);
+    const expected=Math.max(1,(Number(t.baseGuests)||1)+joined);
+    if(current!==expected)t.baseGuests=Math.max(1,current-joined);
+    t.guests=Math.max(1,(Number(t.baseGuests)||1)+joined);return t;
+  }
+  function guestCountAtJoin(t,dt){
+    ensureJoinModel(t);const ts=new Date(dt||new Date()).getTime();let n=Math.max(1,Number(t.baseGuests)||1);
+    joinItems(t).forEach(i=>{const jt=new Date(i.joinedAt||i.createdAt||0).getTime();if(Number.isFinite(jt)&&jt<=ts)n+=(Number(i.guestCount)||0)*(Number(i.qty)||1)});
+    return Math.max(1,n);
+  }
+  function joinUnitAt(dt,t){
+    try{return Math.max(0,Number(rate(new Date(dt).getHours()))||0)}catch(e){try{return Math.max(0,Number(extensionRateAt(dt,state.businessDate))||0)}catch(_){return Math.max(0,Number(baseSeatUnit(t))||0)}}
+  }
+
+  const oldBaseSeatUnit=window.baseSeatUnit;
+  window.baseSeatUnit=function(t){
+    ensureJoinModel(t);if(!t||!t.startedAt)return 0;
+    if(t.baseSeatUnitOverride!==undefined&&t.baseSeatUnitOverride!==null&&t.baseSeatUnitOverride!=='')return Number(t.baseSeatUnitOverride)||0;
+    if(t.baseSeatOverride!==undefined&&t.baseSeatOverride!==null&&t.baseSeatOverride!=='')return Math.round((Number(t.baseSeatOverride)||0)/Math.max(1,Number(t.baseGuests)||1));
+    return oldBaseSeatUnit(t);
+  };
+  window.baseSeat=function(t){ensureJoinModel(t);return baseSeatUnit(t)*Math.max(1,Number(t.baseGuests)||1)};
+  const oldSeat=window.seat;
+  window.seat=function(t,end=new Date()){ensureJoinModel(t);return baseSeat(t)+extensionTotal(t)};
+  const oldCalc=window.calc;
+  window.calc=function(t,end=new Date()){
+    ensureJoinModel(t);const o=oldCalc(t,end),add=joinCharge(t),oldSub=Number(o.subtotal)||0;if(!add){o.guestJoin=0;return o;}
+    const taxRate=oldSub?Number(o.tax||0)/oldSub:0.1,serviceRate=oldSub?Number(o.service||0)/oldSub:0.1,cardRate=oldSub?Number(o.card||0)/oldSub:(t.payment==='card'?0.1:0);
+    o.guestJoin=add;o.subtotal=oldSub+add;o.tax=Math.round(o.subtotal*taxRate);o.service=Math.round(o.subtotal*serviceRate);o.card=t.payment==='card'?Math.round(o.subtotal*cardRate):0;o.total=o.subtotal+o.tax+o.service+o.card;return o;
+  };
+
+  const oldUpdateTable=window.updateTable;
+  window.updateTable=function(id,p){
+    if(typeof isViewer!=='undefined'&&isViewer)return;
+    if(p&&Object.prototype.hasOwnProperty.call(p,'guests')){
+      const t=(state.tables||[]).find(x=>x.id===id);if(!t)return;ensureJoinModel(t);
+      const desired=Math.max(1,Number(p.guests)||1),joined=joinCount(t);t.baseGuests=Math.max(1,desired-joined);t.guests=t.baseGuests+joined;
+      Object.keys(p).forEach(k=>{if(k!=='guests')t[k]=p[k]});render();return;
+    }
+    return oldUpdateTable(id,p);
+  };
+
+  const oldDelete=window.deleteOrderItem;
+  window.deleteOrderItem=function(tableId,itemId){
+    const t=(state.tables||[]).find(x=>x.id===tableId),item=t?(t.items||[]).find(x=>x.id===itemId):null;
+    if(!item||item.type!=='guestJoin')return oldDelete(tableId,itemId);
+    if(!confirm('この途中合流を削除しますか？'))return;ensureJoinModel(t);t.items=(t.items||[]).filter(x=>x.id!==itemId);t.guests=Math.max(1,(Number(t.baseGuests)||1)+joinCount(t));render();
+  };
+
+  function ensureModal(){
+    if(document.getElementById('guestJoinModal'))return;
+    const el=document.createElement('div');el.id='guestJoinModal';el.className='modal';
+    el.innerHTML=`<div class="box" style="max-width:560px"><div class="row"><h2 id="guestJoinTitle">途中合流</h2><button class="btn out small" onclick="closeModal('guestJoinModal')">閉じる</button></div><p class="muted">あとから来たお客様だけを追加します。合流前のセット料金は変えず、合流料金と以降の人数に反映します。</p><input id="guestJoinTableId" type="hidden"><div class="grid3"><div><label>合流日</label><input id="guestJoinDate" type="date" oninput="updateGuestJoinPreview()"></div><div><label>合流時間</label><input id="guestJoinTime" type="hidden"><div id="guestJoinTimePicker"></div></div><div><label>合流人数</label><input id="guestJoinGuests" type="number" min="1" value="1" oninput="updateGuestJoinPreview()"></div></div><div class="grid2" style="margin-top:10px"><div><label>1人あたり合流料金</label><input id="guestJoinUnitPrice" type="number" min="0" step="100" oninput="this.dataset.manual='1';updateGuestJoinPreview()"></div><div class="info"><b>追加料金</b><span id="guestJoinTotal">-</span></div></div><div class="info" style="margin-top:10px"><b>合流後人数</b><span id="guestJoinAfterGuests">-</span></div><button class="btn ok" style="width:100%;margin-top:12px" onclick="confirmGuestJoin()">途中合流を追加</button></div>`;
+    document.body.appendChild(el);initTimePicker('guestJoinTime','guestJoinTimePicker','updateGuestJoinPreview',JOIN_MAX_HOUR);
+  }
+  window.openGuestJoin=function(id){
+    if(typeof isViewer!=='undefined'&&isViewer)return;ensureModal();const t=(state.tables||[]).find(x=>x.id===id);if(!t||t.status!=='busy')return;ensureJoinModel(t);
+    guestJoinTableId.value=id;guestJoinTitle.textContent=id+' 途中合流';guestJoinDate.value=businessDateForClock(now,state.businessDate);guestJoinGuests.value=1;guestJoinUnitPrice.dataset.manual='';guestJoinUnitPrice.value='';setTimeInput('guestJoinTime',businessTime10(now,state.businessDate,'ceil',JOIN_MAX_HOUR),JOIN_MAX_HOUR);updateGuestJoinPreview();openModal('guestJoinModal');
+  };
+  window.updateGuestJoinPreview=function(){
+    const t=(state.tables||[]).find(x=>x.id===guestJoinTableId.value);if(!t)return;let tv=normalizeTimeValue(guestJoinTime.value,'exact',JOIN_MAX_HOUR);if(guestJoinTime.value)setTimeInput('guestJoinTime',tv,JOIN_MAX_HOUR);if(!guestJoinDate.value||!tv)return;
+    const dt=parseBusinessDT(guestJoinDate.value,tv),auto=joinUnitAt(dt,t);if(!guestJoinUnitPrice.dataset.manual)guestJoinUnitPrice.value=auto;const n=Math.max(1,Number(guestJoinGuests.value)||1),unit=Math.max(0,Number(guestJoinUnitPrice.value)||0);guestJoinTotal.textContent=yen(n*unit);guestJoinAfterGuests.textContent=(Math.max(1,Number(t.guests)||1)+n)+'名';
+  };
+  window.confirmGuestJoin=function(){
+    const t=(state.tables||[]).find(x=>x.id===guestJoinTableId.value);if(!t)return;if(!guestJoinDate.value||!guestJoinTime.value)return alert('合流日時を入力してください');
+    const tv=normalizeTimeValue(guestJoinTime.value,'exact',JOIN_MAX_HOUR),parts=tv.split(':').map(Number),minsClock=(parts[0]||0)*60+(parts[1]||0);if(!tv||minsClock>JOIN_MAX_MINUTES)return alert('合流時間を確認してください');
+    const n=Math.max(1,Number(guestJoinGuests.value)||1),unit=Math.max(0,Number(guestJoinUnitPrice.value)||0),dt=parseBusinessDT(guestJoinDate.value,tv);ensureJoinModel(t);
+    t.items.push({id:uuid(),type:'guestJoin',name:`途中合流 ${n}名`,price:n*unit,qty:1,guestCount:n,unitPrice:unit,joinedAt:dt.toISOString(),createdAt:new Date().toISOString()});t.guests=(Number(t.guests)||1)+n;closeModal('guestJoinModal');render();
+  };
+
+  const oldDetails=window.details;
+  window.details=function(t,c){
+    ensureJoinModel(t);let html=oldDetails(t,c);html=html.replace(/セット料金 ×\d+名/,`セット料金 ×${Math.max(1,Number(t.baseGuests)||1)}名`);return html;
+  };
+  const oldReceiptRows=window.receiptRows;
+  window.receiptRows=function(t,c){
+    ensureJoinModel(t);let html=oldReceiptRows(t,c);const items=joinItems(t);if(!items.length)return html;
+    const extra=items.map(i=>{const q=Number(i.qty||1)||1,n=(Number(i.guestCount)||0)*q,total=(Number(i.price)||0)*q;return receiptLine('途中合流',Number(i.unitPrice)||0,n,total)}).join('');
+    const marker='<tr class="gap"><td colspan="3"></td></tr>';return html.includes(marker)?html.replace(marker,extra+marker):extra+html;
+  };
+
+  const oldRenderTables=window.renderTables;
+  window.renderTables=function(){
+    oldRenderTables();const t=(state.tables||[]).find(x=>x.id===active)||(state.tables||[])[0],panel=document.getElementById('tablePanel');if(!t||!panel||t.status!=='busy')return;
+    if(!panel.querySelector('.guest-join-action')){const wrap=document.createElement('div');wrap.className='guest-join-action';wrap.style.marginTop='10px';wrap.innerHTML=`<button class="btn ok" style="width:100%;padding:13px" onclick="openGuestJoin('${t.id}')">途中合流</button><div class="muted" style="font-size:11px;margin-top:4px">あとから来たお客様はこちら。過去セットは変更しません。</div>`;const timeBtn=[...panel.querySelectorAll('button')].find(b=>b.textContent.trim()==='時間を修正');if(timeBtn)timeBtn.insertAdjacentElement('afterend',wrap);else panel.prepend(wrap)}
+    const lab=[...panel.querySelectorAll('label')].find(x=>x.textContent.trim()==='人数');if(lab){lab.textContent='現在人数（訂正）';const box=lab.parentElement;if(box&&!box.querySelector('.guest-correct-note')){const note=document.createElement('div');note.className='muted guest-correct-note';note.style.fontSize='11px';note.style.marginTop='4px';note.textContent='入力ミスの訂正用。途中参加は「途中合流」';box.appendChild(note)}}
+  };
+  const oldRender=window.render;
+  window.render=function(){(state.tables||[]).forEach(ensureJoinModel);return oldRender()};
+  ensureModal();(state.tables||[]).forEach(ensureJoinModel);render();
 })();
 </script>
 </body>
