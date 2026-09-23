@@ -789,7 +789,7 @@ const FIXED_CLOUD_PATH='blow2nd/tanegashima';
 const BASIC_SET_MIN=60, HALF_EXTEND_MIN=30, FULL_EXTEND_MIN=60;
 const JOUNAI_BACK=500;
 const CH=[['ori','オリシャン','オリシャン',20000,4000],['orivip','オリシャンVIP','オリシャン',40000,5000],['vy','ヴーヴイエロー','ヴーヴ',30000,8000],['vw','ヴーヴホワイト','ヴーヴ',35000,9000],['moetice','モエアイス','モエ',38000,10000],['moet','モエピカ','モエ',50000,10000],['belle','ベルエポック','ベル',80000,25000],['beller','ベルエポックロゼ','ベル',150000,46000],['soumei','ソウメイ','ソウメイ',100000,28000],['soumeib','ソウメイブルー','ソウメイ',150000,45000],['soumeir','ソウメイロゼ','ソウメイ',180000,48000],['soumeip','ソウメイプラチナ','ソウメイ',300000,80000],['ag','アルマンドゴールド','アルマンド',200000,50000],['ap','アルマンドピンク','アルマンド',280000,70000],['agr','アルマンドグリーン','アルマンド',350000,100000],['as','アルマンド信号機','アルマンド',800000,0]].map(x=>({id:x[0],name:x[1],cat:x[2],price:x[3],cost:x[4]}));
-let now=new Date(), active='A1', target='', startId='', receiptEditPending=null, profitUnlocked=sessionStorage.getItem('lounge_pos_profit_unlocked')==='1', historyUnlocked=sessionStorage.getItem('lounge_pos_history_unlocked')==='1', receiptEditUnlocked=sessionStorage.getItem('lounge_pos_receipt_edit_unlocked')==='1';
+let now=new Date(), active='A1', target='', startId='', receiptEditPending=null, pastReceiptCastSelectionBySale={}, profitUnlocked=sessionStorage.getItem('lounge_pos_profit_unlocked')==='1', historyUnlocked=sessionStorage.getItem('lounge_pos_history_unlocked')==='1', receiptEditUnlocked=sessionStorage.getItem('lounge_pos_receipt_edit_unlocked')==='1';
 function emptyTable(id){return{id,status:'empty',startedAt:null,serviceMinutes:BASIC_SET_MIN,guests:1,payment:'cash',nominations:[],dohan:[],jounai:[],jounaiCounts:{},after:[],items:[],prepayments:[],note:''}}
 function init(){return{businessDate:bizDate(),casts:[],tables:TABLES.map(emptyTable),sales:[],expenses:[]}}
 const STORAGE_MODE_KEY=KEY+'_storage_mode';
@@ -2205,8 +2205,28 @@ function lockReceiptEdit(){
   receiptEditUnlocked=false;
   sessionStorage.removeItem('lounge_pos_receipt_edit_unlocked');
 }
+function normalizePastReceiptOperations(t){
+  if(!t)return;
+  ['nominations','dohan','after'].forEach(key=>{
+    const arr=Array.isArray(t[key])?t[key].filter(Boolean):[];
+    t[key]=[...new Set(arr)];
+  });
+  normalizeOrderPhases(t);
+  const phases=ensureOperationPhases(t);
+  ['nominations','dohan','after'].forEach(key=>{
+    const activeIds=new Set(t[key]||[]),map=phases[key]||(phases[key]={});
+    Object.keys(map).forEach(cid=>{if(!activeIds.has(cid))delete map[cid];});
+    activeIds.forEach(cid=>{
+      let arr=Array.isArray(map[cid])?map[cid].map(Number).filter(Number.isFinite):[];
+      if(!arr.length)arr=[0];
+      map[cid]=[...new Set(arr.map(v=>Math.max(0,v)))].sort((a,b)=>a-b);
+    });
+  });
+  repairOperationPhases(t);
+}
 function recalcPastSale(sale){
   if(!sale||!sale.table)return;
+  normalizePastReceiptOperations(sale.table);
   let end=new Date(sale.checkoutAt||new Date());
   let mode=sale.paymentMode||sale.table.payment||'cash';
   let c=calc(sale.table,end);
@@ -2219,20 +2239,34 @@ function recalcPastSale(sale){
   }
   syncDerivedAfterReceiptEdit(sale.businessDate);
 }
+function pastReceiptSelectedCastForSale(saleId){
+  return pastReceiptCastSelectionBySale[saleId]||'';
+}
+function setPastReceiptSelectedCast(saleId,cid){
+  pastReceiptCastSelectionBySale[saleId]=cid||'';
+  editPastReceipt(saleId);
+}
 function pastReceiptCastOptions(selected=''){
-  let castOptions=(state.casts||[]).map(c=>`<option value="${c.id}" ${c.id===selected?'selected':''}>${esc(c.name)}</option>`).join('');
-  return `<option value="__guest__" ${selected==='__guest__'?'selected':''}>ゲスト</option>`+castOptions;
+  let castOptions=(state.casts||[]).map(c=>`<option value="${c.id}" ${c.id===selected?'selected':''}>${esc(c.name)}${c.hidden?'（非表示）':''}</option>`).join('');
+  return `<option value="" ${!selected?'selected':''}>キャストを選択</option><option value="__guest__" ${selected==='__guest__'?'selected':''}>ゲスト</option>`+castOptions;
+}
+function pastReceiptCastPicker(saleId,selected=''){
+  const guest=`<button type="button" class="btn ${selected==='__guest__'?'ok':'out'}" onclick="setPastReceiptSelectedCast('${saleId}','__guest__')">ゲスト</button>`;
+  const casts=(state.casts||[]).map(c=>`<button type="button" class="btn ${selected===c.id?'ok':'out'}" onclick="setPastReceiptSelectedCast('${saleId}','${c.id}')">${esc(c.name)}${c.hidden?'（非表示）':''}</button>`).join('');
+  return `<div class="grid4" id="pastReceiptCastPicker">${guest}${casts||'<div class="muted">キャスト未登録</div>'}</div>`;
 }
 function editPastReceipt(saleId){
   if(!receiptEditUnlocked){requireReceiptEditAccess(()=>editPastReceipt(saleId));return;}
   let sale=state.sales.find(s=>s.id===saleId);
   if(!sale||!sale.table)return alert('伝票が見つかりません');
   recalcPastSale(sale);
-  let t=sale.table;normalizeOrderPhases(t);repairOperationPhases(t);let c=calc(t,new Date(sale.checkoutAt||new Date()));
+  let t=sale.table;normalizePastReceiptOperations(t);let c=calc(t,new Date(sale.checkoutAt||new Date()));
+  const selectedCast=pastReceiptSelectedCastForSale(saleId);
   let regularOpRows=[['nominations','指名'],['dohan','同伴'],['after','アフター']].map(([key,label])=>{
-    let arr=t[key]||[];
-    let names=arr.map(id=>cname(id)).join('、')||'-';
-    return `<tr><td>${label}</td><td>${names}</td><td class="right">${arr.length}</td><td><button class="btn small" onclick="pastAddOp('${saleId}','${key}')">＋</button> <button class="btn out small" onclick="pastRemoveOp('${saleId}','${key}')">－</button></td></tr>`;
+    let arr=[...new Set(t[key]||[])];
+    let existing=arr.map(cid=>`<tr><td>${label}</td><td>${esc(cname(cid))}</td><td class="right">1</td><td><button class="btn bad small" onclick="pastRemoveSpecificOp('${saleId}','${key}','${cid}')">削除</button></td></tr>`).join('');
+    let add=`<tr><td>${label}</td><td class="muted">${arr.length?'別キャストを追加できます':'なし'}</td><td class="right">${arr.length}</td><td><button class="btn blue small" onclick="pastAddOp('${saleId}','${key}')">選択キャストを追加</button></td></tr>`;
+    return existing+add;
   }).join('');
   let jounaiRows='';
   for(let phase=0;phase<=currentOrderPhase(t);phase++){
@@ -2243,10 +2277,10 @@ function editPastReceipt(saleId){
   }
   let opRows=regularOpRows+(jounaiRows||'<tr><td>場内</td><td class="muted">なし</td><td class="right">0</td><td>-</td></tr>');
   let jounaiPhaseOptions=Array.from({length:currentOrderPhase(t)+1},(_,phase)=>`<option value="${phase}">${phase===0?'初回':phase+'回目延長'}</option>`).join('');
-  let itemRows=(t.items||[]).map(i=>`<tr><td>${esc(i.name)}${i.castId?'（'+esc(cname(i.castId))+'）':((i.target==='guest'||i.type==='guestShot')?'（ゲスト）':'')}</td><td class="right">${yen(i.price)}</td><td class="right">${i.qty||1}</td><td class="right">${yen((+i.price||0)*(+i.qty||1))}</td><td><button class="btn small" onclick="pastChangeItemQty('${saleId}','${i.id}',1)">＋</button> <button class="btn out small" onclick="pastChangeItemQty('${saleId}','${i.id}',-1)">－</button> <button class="btn bad small" onclick="pastDeleteItemQty('${saleId}','${i.id}')">数量削除</button></td></tr>`).join('')||'<tr><td colspan="5" class="muted">追加注文なし</td></tr>';
+  let itemRows=(t.items||[]).map(i=>{const canReassign=!!i.castId&&(i.type==='drink'||i.type==='castShot');return `<tr><td>${esc(i.name)}${i.castId?'（'+esc(cname(i.castId))+'）':((i.target==='guest'||i.type==='guestShot')?'（ゲスト）':'')}</td><td class="right">${yen(i.price)}</td><td class="right">${i.qty||1}</td><td class="right">${yen((+i.price||0)*(+i.qty||1))}</td><td><button class="btn small" onclick="pastChangeItemQty('${saleId}','${i.id}',1)">＋</button> <button class="btn out small" onclick="pastChangeItemQty('${saleId}','${i.id}',-1)">－</button> <button class="btn bad small" onclick="pastDeleteItemQty('${saleId}','${i.id}')">数量削除</button>${canReassign?` <button class="btn blue small" onclick="pastReassignItemCast('${saleId}','${i.id}')">担当変更</button>`:''}</td></tr>`;}).join('')||'<tr><td colspan="5" class="muted">追加注文なし</td></tr>';
   selectTitle.textContent=`過去伝票修正 ${t.id}`;
   let cashEdit=sale.table.payment==='cash'?`<div><label>預かり金</label><input type="number" value="${sale.cashReceived||0}" onchange="updatePastCashReceived('${saleId}',this.value)"></div><div class="info"><b>おつり</b><span>${yen(Math.max(0,(+sale.cashReceived||0)-(+c.total||0)))}</span></div>`:`<div class="info"><b>預かり金</b><span>現金会計のみ</span></div><div class="info"><b>おつり</b><span>-</span></div>`;
-  selectBody.innerHTML=`<div class="card" style="background:#f8fafc"><div class="grid3"><div class="info"><b>営業日</b><span>${sale.businessDate}</span></div><div class="info"><b>卓</b><span>${t.id}</span></div><div class="info"><b>修正後合計</b><span>${yen(c.total)}</span></div></div><p class="muted">伝票修正は1704で解除中です。セット料金・指名料金・預かり金・注文数を修正すると、伝票合計・売上履歴・週間表・利益率・営業終了保存データまで再計算します。</p><div class="section">料金修正</div><div class="grid4"><div><label>一人分セット料金</label><input type="number" value="${baseSeatUnit(t)}" onchange="updatePastBaseCharge('${saleId}',this.value)"></div><div><label>指名料金（1本/1セット）</label><input type="number" value="${Number(t.nominationUnitPrice??2000)}" onchange="updatePastNominationCharge('${saleId}',this.value)"></div>${cashEdit}</div><div class="summary" style="margin-top:10px">${cardStat('セット/延長',c.seat)}${cardStat('指名料金',c.nomination)}${cardStat('小計',c.subtotal)}${cardStat('合計',c.total)}</div><div class="grid2"><div><label>追加先</label><select id="pastCastSelect">${pastReceiptCastOptions()}</select></div><div><label>数量</label><input id="pastAddQty" type="number" min="1" value="1"></div></div><div class="grid2" style="margin-top:8px"><div><label>場内追加先セット</label><select id="pastJounaiPhase">${jounaiPhaseOptions}</select></div><div style="display:flex;align-items:flex-end"><button class="btn blue" style="width:100%" onclick="pastAddJounaiPhase('${saleId}')">選択キャストをこのセットから場内追加</button></div></div><div class="section">よく使う追加</div><div class="grid4"><button class="btn" onclick="pastAddItem('${saleId}','drink','ドリンク',1000,true)">ドリンク＋</button><button class="btn" onclick="pastAddItem('${saleId}','castShot','キャストショット',1000,true)">ショット＋</button><button class="btn out" onclick="pastAddItem('${saleId}','beer','ビール',1000,false)">ビール＋</button><button class="btn out" onclick="pastAddCustomItem('${saleId}')">その他＋</button></div><div class="section">指名・場内</div><div class="scroll"><table><thead><tr><th>項目</th><th>キャスト</th><th class="right">数</th><th>操作</th></tr></thead><tbody>${opRows}</tbody></table></div><div class="section">注文明細</div><div class="scroll"><table><thead><tr><th>商品</th><th class="right">単価</th><th class="right">数量</th><th class="right">小計</th><th>操作</th></tr></thead><tbody>${itemRows}</tbody></table></div><div class="row" style="margin-top:12px"><b>修正後合計：${yen(c.total)}</b><button class="btn out" onclick="lockReceiptEdit();closeModal('selectModal')">ロックして閉じる</button><button class="btn ok" onclick="closeModal('selectModal');render()">完了</button></div></div>`;
+  selectBody.innerHTML=`<div class="card" style="background:#f8fafc"><div class="grid3"><div class="info"><b>営業日</b><span>${sale.businessDate}</span></div><div class="info"><b>卓</b><span>${t.id}</span></div><div class="info"><b>修正後合計</b><span>${yen(c.total)}</span></div></div><p class="muted">伝票修正は1704で解除中です。セット料金・指名料金・預かり金・注文数を修正すると、伝票合計・売上履歴・週間表・利益率・営業終了保存データまで再計算します。</p><div class="section">料金修正</div><div class="grid4"><div><label>一人分セット料金</label><input type="number" value="${baseSeatUnit(t)}" onchange="updatePastBaseCharge('${saleId}',this.value)"></div><div><label>指名料金（1本/1セット）</label><input type="number" value="${Number(t.nominationUnitPrice??2000)}" onchange="updatePastNominationCharge('${saleId}',this.value)"></div>${cashEdit}</div><div class="summary" style="margin-top:10px">${cardStat('セット/延長',c.seat)}${cardStat('指名料金',c.nomination)}${cardStat('小計',c.subtotal)}${cardStat('合計',c.total)}</div><div class="section">修正キャスト選択</div><p class="muted">先に下の一覧からキャストを選択してください。選択は修正中の伝票ごとに保持されます。バックは既存値へ足し込まず、修正後の伝票全体から再集計します。</p>${pastReceiptCastPicker(saleId,selectedCast)}<div class="grid2" style="margin-top:10px"><div><label>選択中</label><select id="pastCastSelect" onchange="pastReceiptCastSelectionBySale['${saleId}']=this.value">${pastReceiptCastOptions(selectedCast)}</select></div><div><label>数量（ドリンク・ショット用）</label><input id="pastAddQty" type="number" min="1" value="1"></div></div><div class="grid2" style="margin-top:8px"><div><label>場内追加先セット</label><select id="pastJounaiPhase">${jounaiPhaseOptions}</select></div><div style="display:flex;align-items:flex-end"><button class="btn blue" style="width:100%" onclick="pastAddJounaiPhase('${saleId}')">選択キャストをこのセットから場内追加</button></div></div><div class="section">よく使う追加</div><div class="grid4"><button class="btn" onclick="pastAddItem('${saleId}','drink','ドリンク',1000,true)">ドリンク＋</button><button class="btn" onclick="pastAddItem('${saleId}','castShot','キャストショット',1000,true)">ショット＋</button><button class="btn out" onclick="pastAddItem('${saleId}','beer','ビール',1000,false)">ビール＋</button><button class="btn out" onclick="pastAddCustomItem('${saleId}')">その他＋</button></div><div class="section">指名・場内</div><div class="scroll"><table><thead><tr><th>項目</th><th>キャスト</th><th class="right">数</th><th>操作</th></tr></thead><tbody>${opRows}</tbody></table></div><div class="section">注文明細</div><div class="scroll"><table><thead><tr><th>商品</th><th class="right">単価</th><th class="right">数量</th><th class="right">小計</th><th>操作</th></tr></thead><tbody>${itemRows}</tbody></table></div><div class="row" style="margin-top:12px"><b>修正後合計：${yen(c.total)}</b><button class="btn out" onclick="lockReceiptEdit();closeModal('selectModal')">ロックして閉じる</button><button class="btn ok" onclick="closeModal('selectModal');render()">完了</button></div></div>`;
   openModal('selectModal');
 }
 function updatePastBaseCharge(saleId,value){
@@ -2273,7 +2307,11 @@ function updatePastCashReceived(saleId,value){
   render();
   editPastReceipt(saleId);
 }
-function pastSelectedCast(){return document.getElementById('pastCastSelect')?.value||'';}
+function pastSelectedCast(saleId=''){
+  const v=document.getElementById('pastCastSelect')?.value||'';
+  if(saleId&&v)pastReceiptCastSelectionBySale[saleId]=v;
+  return v||(saleId?pastReceiptSelectedCastForSale(saleId):'');
+}
 function pastAddQty(){return Math.max(1,Math.floor(+document.getElementById('pastAddQty')?.value||1));}
 function syncJounaiDerivedFromPhases(t){
   const map=ensureOperationPhases(t).jounai||(ensureOperationPhases(t).jounai={}),counts=ensureJounaiCounts(t);
@@ -2286,9 +2324,9 @@ function syncJounaiDerivedFromPhases(t){
   t.jounai=Object.keys(map).filter(cid=>(map[cid]||[]).some(p=>Number(p)===cur));
 }
 function pastAddJounaiPhase(saleId){
-  let sale=state.sales.find(s=>s.id===saleId),cid=pastSelectedCast();
+  let sale=state.sales.find(s=>s.id===saleId),cid=pastSelectedCast(saleId);
   if(!sale||!sale.table)return;
-  if(!cid||cid==='__guest__')return alert('場内にするキャストを選択してください');
+  if(!cid||cid==='__guest__')return alert('上の「修正キャスト選択」から場内にするキャストを選択してください');
   normalizeOrderPhases(sale.table);repairOperationPhases(sale.table);
   const phase=Math.max(0,Number(document.getElementById('pastJounaiPhase')?.value)||0),map=ensureOperationPhases(sale.table).jounai;
   if(!Array.isArray(map[cid]))map[cid]=[];
@@ -2308,34 +2346,38 @@ function pastRemoveJounaiPhase(saleId,cid,phase){
 }
 function pastAddOp(saleId,key){
   if(key==='jounai')return pastAddJounaiPhase(saleId);
-  let sale=state.sales.find(s=>s.id===saleId),cid=pastSelectedCast();
-  if(!sale||!cid||cid==='__guest__')return alert('キャストを選択してください');
+  let sale=state.sales.find(s=>s.id===saleId),cid=pastSelectedCast(saleId);
+  if(!sale||!sale.table)return;
+  if(!cid||cid==='__guest__')return alert('上の「修正キャスト選択」からキャストを選択してください');
+  normalizePastReceiptOperations(sale.table);
   sale.table[key]=sale.table[key]||[];
-  for(let i=0;i<pastAddQty();i++) sale.table[key].push(cid);
+  if(sale.table[key].includes(cid))return alert(`${cname(cid)} はすでに${key==='nominations'?'指名':key==='dohan'?'同伴':'アフター'}へ登録済みです。二重登録はしません。`);
+  sale.table[key].push(cid);
+  addOperationPhase(sale.table,key,cid,0);
+  normalizePastReceiptOperations(sale.table);
   recalcPastSale(sale); render(); editPastReceipt(saleId);
+}
+function pastRemoveSpecificOp(saleId,key,cid){
+  let sale=state.sales.find(s=>s.id===saleId);if(!sale||!sale.table)return;
+  sale.table[key]=[...new Set(sale.table[key]||[])].filter(x=>x!==cid);
+  const map=ensureOperationPhases(sale.table)[key]||{};delete map[cid];
+  recalcPastSale(sale);render();editPastReceipt(saleId);
 }
 function pastRemoveOp(saleId,key){
   if(key==='jounai'){
-    let sale=state.sales.find(s=>s.id===saleId),cid=pastSelectedCast();if(!sale||!sale.table||!cid||cid==='__guest__')return;
+    let sale=state.sales.find(s=>s.id===saleId),cid=pastSelectedCast(saleId);if(!sale||!sale.table||!cid||cid==='__guest__')return alert('上の「修正キャスト選択」からキャストを選択してください');
     normalizeOrderPhases(sale.table);repairOperationPhases(sale.table);
     const map=ensureOperationPhases(sale.table).jounai||{},arr=Array.isArray(map[cid])?map[cid]:[];if(!arr.length)return;
     return pastRemoveJounaiPhase(saleId,cid,arr[arr.length-1]);
   }
-  let sale=state.sales.find(s=>s.id===saleId),cid=pastSelectedCast();
-  if(!sale||!sale.table[key]||!sale.table[key].length)return;
-  let qty=pastAddQty();
-  for(let i=0;i<qty;i++){
-    let idx=(cid&&cid!=='__guest__')?sale.table[key].lastIndexOf(cid):-1;
-    if(idx<0) idx=sale.table[key].length-1;
-    if(idx>=0) sale.table[key].splice(idx,1);
-  }
-  recalcPastSale(sale); render(); editPastReceipt(saleId);
+  let cid=pastSelectedCast(saleId);if(!cid||cid==='__guest__')return alert('上の「修正キャスト選択」からキャストを選択してください');
+  return pastRemoveSpecificOp(saleId,key,cid);
 }
 function pastAddItem(saleId,type,name,price,needsCast){
   let sale=state.sales.find(s=>s.id===saleId);
-  if(!sale)return;
-  let qty=pastAddQty(),selected=needsCast?pastSelectedCast():'';
-  if(needsCast&&!selected)return alert('追加先を選択してください');
+  if(!sale||!sale.table)return;
+  let qty=pastAddQty(),selected=needsCast?pastSelectedCast(saleId):'';
+  if(needsCast&&!selected)return alert('上の「修正キャスト選択」から追加先を選択してください');
   let isGuest=selected==='__guest__';
   let finalType=type;
   let finalName=name;
@@ -2343,10 +2385,20 @@ function pastAddItem(saleId,type,name,price,needsCast){
   if(needsCast&&isGuest&&type==='drink'){finalName='ドリンク';}
   if(needsCast&&isGuest&&type==='castShot'){finalType='guestShot';finalName='ゲストショット';finalPrice=1000;}
   sale.table.items=sale.table.items||[];
-  let item={id:uuid(),type:finalType,name:finalName,price:finalPrice,qty,target:isGuest?'guest':(needsCast?'cast':'')};
-  if(needsCast&&!isGuest)item.castId=selected;
-  sale.table.items.push(item);
+  normalizeOrderPhases(sale.table);
+  const phase=currentOrderPhase(sale.table),castId=(needsCast&&!isGuest)?selected:'',target=isGuest?'guest':(needsCast?'cast':'');
+  let existing=sale.table.items.find(i=>i.type===finalType&&i.name===finalName&&Number(i.price||0)===finalPrice&&(i.castId||'')===castId&&(i.target||'')===target&&itemOrderPhase(sale.table,i)===phase);
+  if(existing)existing.qty=(Number(existing.qty)||0)+qty;
+  else sale.table.items.push({id:uuid(),type:finalType,name:finalName,price:finalPrice,qty,target,castId:castId||undefined,orderPhase:phase});
   recalcPastSale(sale); render(); editPastReceipt(saleId);
+}
+function pastReassignItemCast(saleId,itemId){
+  let sale=state.sales.find(s=>s.id===saleId);if(!sale||!sale.table)return;
+  let item=(sale.table.items||[]).find(i=>i.id===itemId);if(!item)return;
+  let cid=pastSelectedCast(saleId);
+  if(!cid||cid==='__guest__')return alert('担当変更は上の「修正キャスト選択」からキャストを選択してください');
+  item.castId=cid;item.target='cast';
+  recalcPastSale(sale);render();editPastReceipt(saleId);
 }
 function pastAddCustomItem(saleId){
   let name=prompt('商品名を入力してください','その他');
