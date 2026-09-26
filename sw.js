@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blow2nd-pos-tanegashima-mobile-v7-receipt-edit-recalc';
+const CACHE_NAME = 'blow2nd-pos-tanegashima-mobile-v8-cast-register-restored';
 const STATIC_ASSETS = [
   './index.html',
   './manifest.json',
