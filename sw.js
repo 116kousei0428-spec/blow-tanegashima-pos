@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blow2nd-pos-tanegashima-mobile-v8-cast-register-restored';
+const CACHE_NAME = 'blow2nd-pos-tanegashima-mobile-v9-cast-management-amami-parity';
 const STATIC_ASSETS = [
   './index.html',
   './manifest.json',
