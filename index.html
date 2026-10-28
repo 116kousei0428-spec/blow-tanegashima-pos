@@ -3186,16 +3186,34 @@ function makeWeek(){
   let rows=wds.map(d=>payrollDayRow(c,d,totals)).join('');
   weekArea.innerHTML=`<div class="card printable-sheet" id="weeklyPrintArea"><div class="row weekly-head-row"><h2>${c.name} 週間表 ${wds[0]}〜${wds[6]}</h2><div class="row no-print weekly-actions"><button class="btn out" onclick="printElement('weeklyPrintArea')">週間表印刷（A4横）</button><button class="btn blue" onclick="saveWeeklyA4(this)">保存（A4横）</button></div></div><div class="muted">日曜開始・土曜締め。月跨ぎあり。週間ボーナスは週最終日の月へ計上。</div><div class="scroll"><table>${payrollTableHead()}<tbody>${rows}${totalsRow(totals)}</tbody></table></div>${payrollSummaryCards(c,totals,'週間',base)}</div>`;
 }
+// 週間ボーナスは日曜〜土曜の週単位で計算し、土曜日が属する月に計上する。
+function monthlyWeeklyBonusSummary(c,base){
+  const ym=monthKeyOf(base);
+  const seen=new Set();
+  const result={dohanBonus:0,subtotalBonus:0,totalBonus:0};
+  monthDays(base).forEach(d=>{
+    const wds=weekDates(d),end=wds[6];
+    if(monthKeyOf(end)!==ym || seen.has(end)) return;
+    seen.add(end);
+    const weekTotals=initWeekTotals();
+    wds.forEach(wd=>addDayToTotals(weekTotals,c,wd));
+    const b=weeklyBonusSummary(weekTotals);
+    result.dohanBonus+=b.dohanBonus;
+    result.subtotalBonus+=b.subtotalBonus;
+    result.totalBonus+=b.totalBonus;
+  });
+  return result;
+}
 function monthPortraitSummary(c,totals,base){
-  let bonus=weeklyBonusSummary(totals), gross=totals.pay+bonus.totalBonus, deduction=gross*((c.deductionRate||0)/100), net=gross-deduction;
+  let bonus=monthlyWeeklyBonusSummary(c,base), gross=totals.pay+bonus.totalBonus, deduction=gross*((c.deductionRate||0)/100), net=gross-deduction;
   return `<div class="monthlyTop">
     <div><span>勤務時間給</span><b>${yen(totals.labor)}</b></div>
     <div><span>バック合計</span><b>${yen(totals.back)}</b></div>
-    <div><span>総額</span><b>${yen(gross)}</b></div>
+    <div><span>総額（週間ボーナス込）</span><b>${yen(gross)}</b></div>
     <div><span>控除率</span><b>${c.deductionRate||0}%</b></div>
     <div><span>控除額</span><b>${yen(deduction)}</b></div>
     <div class="net"><span>支給額</span><b>${yen(net)}</b></div>
-  </div>`;
+  </div><div class="muted">週間ボーナス（月内に締まる週の合算）：同伴 ${yen(bonus.dohanBonus)} ／ 売上小計 ${yen(bonus.subtotalBonus)} ／ 合計 ${yen(bonus.totalBonus)}。週跨ぎ分は土曜日の属する月に計上。</div>`;
 }
 function monthPortraitHead(){return `<thead><tr><th>日付</th><th>出勤-退勤</th><th>勤務</th><th>時間給</th><th>バック内訳</th><th>日合計</th></tr></thead>`}
 function monthPortraitRow(c,d,totals=null){
@@ -3211,6 +3229,10 @@ function monthPortraitRow(c,d,totals=null){
   if(st.nomSub)backParts.push(`指名小計 ${yen(st.nomSub)}`);
   if(st.dohanBack)backParts.push(`同伴 ${yen(st.dohanBack)}`);
   if(st.afterBack)backParts.push(`アフター ${yen(st.afterBack)}`);
+  // st.back に含まれる追加バック等が、明細から漏れないよう差額表示する。
+  const shownBack=Number(st.dbBack||0)+Number(st.sbBack||0)+Number(st.wheelBack||0)+Number(st.champBack||0)+Number(jounaiBack||0)+Number(st.nomSet||0)+Number(st.nomSub||0)+Number(st.dohanBack||0)+Number(st.afterBack||0);
+  const extraBack=Number(st.back||0)-shownBack;
+  if(Math.abs(extraBack)>0.00001)backParts.push(`その他バック ${yen(extraBack)}`);
   let backs=backParts.length?backParts.join(' / '):'-';
   return `<tr><td>${dateWithWeekday(d)}</td><td>${absent?'休み':`${l.in||''}-${l.out||''}`}</td><td>${absent?'-':workDur(c,d)}</td><td class="right">${absent?'-':yen(labor)}</td><td>${backs}</td><td class="right">${absent?'-':yen(labor+st.back)}</td></tr>`
 }
