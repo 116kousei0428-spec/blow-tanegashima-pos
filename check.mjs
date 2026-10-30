@@ -1,0 +1,26 @@
+import { readFileSync, existsSync } from 'node:fs';
+import assert from 'node:assert/strict';
+const config = JSON.parse(readFileSync('wrangler.jsonc', 'utf8'));
+assert.equal(config.name, 'rakuten-auto-affiliate');
+assert.equal(config.main, './worker.js');
+assert(existsSync(config.main), 'Worker entrypoint missing');
+assert(existsSync(`${config.assets.directory}/index.html`), 'Static index missing');
+assert.equal(config.assets.run_worker_first, true);
+assert.equal(config.ai.binding, 'AI', 'Workers AI binding missing');
+assert(existsSync(`${config.assets.directory}/app.js`), 'Front-end JavaScript missing');
+assert(existsSync(`${config.assets.directory}/style.css`), 'Stylesheet missing');
+assert.equal(config.d1_databases.length, 1);
+assert.equal(config.d1_databases[0].binding, 'DB');
+assert.equal(config.d1_databases[0].database_name, 'rakuten-affiliate-db');
+assert.equal(config.d1_databases[0].database_id, '81926891-4dd8-4cc2-b966-e530d2912452');
+const workerSource = readFileSync(config.main,'utf8');
+const uiSource = readFileSync(`${config.assets.directory}/index.html`,'utf8');
+assert(workerSource.includes(JSON.stringify(uiSource)), 'Worker embedded UI differs from index.html');
+assert(uiSource.includes('D1に保存・更新'));
+assert(uiSource.includes('雑学→Threads投稿文'));
+assert(workerSource.includes('THREADS_ACCESS_TOKEN'));
+console.log('PASS: Worker, D1 binding and UI v15 paths match GitHub layout');
+
+assert(uiSource.includes('id="auto-publish-after-generate"'));
+assert(uiSource.includes('公開済み記事一覧を見る'));
+assert(workerSource.includes('article_publications'));
